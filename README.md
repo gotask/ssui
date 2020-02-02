@@ -1,7 +1,7 @@
 # ssui
 a simper html ui library for freshman
 
-#example
+# example
 ```
 app := NewApp(":8080")
 f := NewFrame("/", "HL", "Hello", "World")
@@ -49,3 +49,4 @@ f.AddElem(table)
 
 app.AddFrame(f).Run()
 ```
+![效果](https://github.com/gotask/images/blob/master/ssui.png)
