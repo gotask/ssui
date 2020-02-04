@@ -71,5 +71,12 @@ func main() {
 	}))
 	app.AddFrame(f).AddFrame(login).Run()
 }
+/*
+f.AddElem(NewTextArea("TextArea1", "input...", "")).AddElem(NewSelect("Select1", 0, []string{"a", "b", "c"}))
+	f.AddElem(NewSelect("Select2", 1, []string{"d", "f", "e"}))
+	f.AddElem(NewRadio("Radio1", 0, []string{"a", "b", "c"}))
+	f.AddElem(NewTimePicker("TimePicker1", "yyyy-MM-dd HH:mm:ss", 0))
+	f.AddElem(NewRow().AddElem(NewCheckBox("CheckBox1", "a", true)).AddElem(NewCheckBox("CheckBox2", "b", true)).AddElem(NewCheckBox("CheckBox3", "c", false)))
+*/
 ```
 ![效果](https://github.com/gotask/images/blob/master/ssui.png)
