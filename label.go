@@ -11,7 +11,7 @@ type HLabel struct {
 }
 
 var HtmlLabel = `<div class="layui-form-item">
-<label class="layui-form-label">%s</label>
+<label>%s</label>
 </div>`
 
 func NewLabel(text string) *HLabel {

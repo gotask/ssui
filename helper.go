@@ -6,10 +6,6 @@ import (
 	"strconv"
 )
 
-func IsValidToken(token string) bool {
-	return true
-}
-
 func GetToken(r *http.Request) string {
 	r.ParseForm()
 	if v, ok := r.Form["token"]; ok {

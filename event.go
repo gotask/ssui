@@ -7,13 +7,6 @@ import (
 	"net/http"
 )
 
-type HResponse struct {
-	Error        string //优先弹出错误
-	Content      string //次优显示返回内容
-	Url          string //最后执行跳转页面
-	ShowInDialog bool   //跳转页面是否展示在弹出框里
-}
-
 /**************************************************************************
 			event_id 事件发起者ID
 			url_router 事件页面路由
@@ -27,10 +20,10 @@ func HandleButtonClick(a *HApp) {
 		for k, v := range r.Form {
 			params[k] = v[0]
 		}
-		res := &HResponse{Error: "error param"}
 		event_id, ok := params["event_id"]
 		url_router, ok1 := params["url_router"]
 		token := params["token"]
+		res := &HResponse{Error: "error param", Token: token}
 		for {
 			if !ok || !ok1 {
 				break
@@ -65,10 +58,10 @@ func HandleTableDel(a *HApp) {
 		for k, v := range r.Form {
 			params[k] = v[0]
 		}
-		res := &HResponse{Error: "error param"}
 		event_id, ok := params["event_id"]
 		url_router, ok1 := params["url_router"]
 		token := params["token"]
+		res := &HResponse{Error: "error param", Token: token}
 		for {
 			if !ok || !ok1 {
 				break
@@ -103,10 +96,10 @@ func HandleTableAdd(a *HApp) {
 		for k, v := range r.Form {
 			params[k] = v[0]
 		}
-		res := &HResponse{Error: "error param"}
 		event_id, ok := params["event_id"]
 		url_router, ok1 := params["url_router"]
 		token := params["token"]
+		res := &HResponse{Error: "error param", Token: token}
 		for {
 			if !ok || !ok1 {
 				break
@@ -126,10 +119,4 @@ func HandleTableAdd(a *HApp) {
 		ret_json, _ := json.Marshal(res)
 		io.WriteString(w, string(ret_json))
 	})
-}
-
-func ResponseFaild(err string, w http.ResponseWriter) {
-	res := &HResponse{Error: err}
-	ret_json, _ := json.Marshal(res)
-	io.WriteString(w, string(ret_json))
 }

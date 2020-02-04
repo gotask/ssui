@@ -34,18 +34,12 @@ var HtmlTable = `
 	{{if .Del}} <th>Tool</th> {{end}}
       </tr> 
     </thead>
- <tbody>
-	{{$del:=.Del}}
-	{{$TId:=.Id}}
-	{{range .Rows}}
-		<tr> {{range .Elems}} 
-				<td><label class="layui-form-label">{{.Text}}</label></td>
-			 {{end}} 
-	{{if $del}} <td><a class="layui-btn" onclick="tableDel('{{$TId}}', '{{.Id}}')">Del</a></td> {{end}}
-		</tr> 
-	{{end}}
- </tbody>
-	{{if .Add}} 
+ <tbody>{{$del:=.Del}}{{$TId:=.Id}}
+	{{range .Rows}}<tr>
+		{{range .Elems}}<td>{{.Text}}</td>{{end}} 
+		{{if $del}} <td><a class="layui-btn" onclick="tableDel('{{$TId}}', '{{.Id}}')">Del</a></td>{{end}}
+	</tr>{{end}}
+ </tbody>{{if .Add}} 
     <thead>
 	<tr>
 	{{range $k,$v:=.Header}} <th><input class="layui-input" id="{{$TId}}_{{$k}}"></input></th> {{end}}
@@ -59,14 +53,13 @@ var HtmlTable = `
 	
 	 	$("#TableAdd_{{$TId}}").click(function() {
 			var $ = layui.jquery;
-			var url = "/table_add?event_id={{$TId}}&url_router="+window.location.pathname{{range $k,$v:=.Header}}+"&{{$k}}="+$("#{{$TId}}_{{$k}}").val(){{end}};
+			var url = "/table_add?event_id={{$TId}}&url_router="+window.location.pathname+"&token="+getToken(){{range $k,$v:=.Header}}+"&{{$k}}="+$("#{{$TId}}_{{$k}}").val(){{end}};
 			$.get(url,function(ret){
 				handleRsp(ret);
 		    });
 		});
 	});
-	</script>
-	{{end}}
+	</script>{{end}}
 </table>
 
 `
@@ -107,4 +100,16 @@ func (table *HTable) Render(token string) string {
 		return e.Error()
 	}
 	return buf.String()
+}
+
+func (table *HTable) AddRow(id string, cols []string) {
+	row := HTableRow{id, make([]HTableElem, 0)}
+	for _, c := range cols {
+		row.Elems = append(row.Elems, HTableElem{c})
+	}
+	table.Rows = append(table.Rows, row)
+}
+
+func (table *HTable) Reset() {
+	table.Rows = nil
 }

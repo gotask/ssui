@@ -72,15 +72,22 @@ func (a *HApp) Run() error {
 	for r, _ := range a.Global.Frames {
 		tempr := r
 		h.HandleFunc(r, func(w http.ResponseWriter, r *http.Request) {
-			/*if r.URL.Path != tempr {
-				w.WriteHeader(404)
-				return
-			}*/
 			token := GetToken(r)
 			f := a.GetFrame(token, tempr)
 			if f == nil {
 				w.WriteHeader(404)
 			} else {
+				if f.TokenCheck != nil {
+					check, furl := f.TokenCheck(token)
+					if !check {
+						if furl == "" || furl == tempr {
+							w.WriteHeader(404)
+						} else {
+							http.Redirect(w, r, furl, http.StatusFound)
+						}
+						return
+					}
+				}
 				w.Write([]byte(f.Render(token)))
 			}
 		})

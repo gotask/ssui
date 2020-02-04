@@ -7,14 +7,14 @@ var HtmlHeader = `<!DOCTYPE html>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <title>{{.Title}}</title>
+  <link rel="shortcut icon" type="image/ico" href="/layui/favicon.ico" />
   <link rel="stylesheet" href="/layui/css/layui.css">
   <script src="/layui/layui.js"></script>
 </head>
 <body>
 
-<div class="layui-footer" style="text-align:center;">
-    <!-- 顶部固定区域 -->
-    <h1>{{.Header}}</h1>
+<div class="layui-header" style="text-align:center;">
+   <h1>{{.Header}}</h1>
 </div>
 
 <div class="layui-container">
@@ -30,9 +30,7 @@ var HtmlFooter = `
 </div>
 
 <div class="layui-footer" style="text-align:center;">
-    <!-- 底部固定区域 -->
     <span>{{.Footer}}</span>
-
 </div>
 </body>
 </html>`
@@ -66,7 +64,7 @@ function tableDel(tid,rid){
 	  ,btn: ['OK', 'Cancel']
 	  ,yes: function(index){
 	    layer.close(index);
-	    var url = "/table_del?event_id="+tid+"&url_router="+window.location.pathname+"&rowid="+rid;
+	    var url = "/table_del?event_id="+tid+"&token="+getToken()+"&url_router="+window.location.pathname+"&rowid="+rid;
 		var $ = layui.jquery;
 		$.get(url,function(ret){
 			handleRsp(ret);
@@ -76,12 +74,7 @@ function tableDel(tid,rid){
 }
 
 function buttonClick(e){
-	var url = "/button_click?event_id="+e+"&url_router="+window.location.pathname;
-	var param = getAllElemVal();
-	if(!isEmpty(param))
-	{
-		url=url+"&"+param
-	};
+	var url = "/button_click?event_id="+e+"&url_router="+window.location.pathname+"&"+getAllElemVal();
 	var $ = layui.jquery;
 	$.get(url,function(ret){
 		handleRsp(ret);
@@ -93,28 +86,65 @@ function handleRsp(ret){
 	var layer = layui.layer;
 	var obj = JSON.parse(ret);
  	console.log(obj)
+	if(!isEmpty(obj.Token)){
+		 setToken(obj.Token);
+	}
 	if(!isEmpty(obj.Error)){
 		 layer.msg(obj.Error);
-	}else if(!isEmpty(obj.Content)){
-		 $('#retcode').html(obj.Content+"<br>"+$('#retcode').html());
+	}else if(!isEmpty(obj.EchoText)){
+		 $('#retcode').html(obj.EchoText+"<br>"+$('#retcode').html());
 	}else if(obj.ShowInDialog){
 		layer.open({
 		  type: 2,
 		  area: ['700px', '450px'],
 		  fixed: false, //不固定
 		  maxmin: true,
-		  content: obj.Url
+		  content: obj.RedirectUrl
 		});
 	}else{
-		redirectUrl(obj.Url)
+		redirectUrl(obj.RedirectUrl)
 	}
+}
+
+function getToken(){
+	var usertoken = layui.data('userdata').token;
+	if(isEmpty(usertoken)){
+		return ""
+	}
+	return usertoken
+}
+
+function setToken(token){
+	if(isEmpty(token)){
+		return
+	}
+	layui.data('userdata', {
+        key: 'token'
+        ,value: token
+    });
+}
+function delToken(){
+	layui.data('userdata', {
+        key: 'token'
+        ,remove: true
+    });
 }
 
 function redirectUrl(url){
 	if(isEmpty(url)){
 		location.reload();
 	}else{
-		window.location.href=url;
+		var usertoken = layui.data('userdata').token;
+		if(isEmpty(usertoken)){
+			window.location.href=url
+			return
+		}
+		if(url.indexOf("?")<0){
+			url=url+"?"
+		}else{
+			url=url+"&"
+		}
+		window.location.href=url+"token="+getToken();
 	}
 }
 

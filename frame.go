@@ -7,6 +7,9 @@ import (
 	"strings"
 )
 
+type OnFrameLoad func(token string)
+type ValidToken func(token string) (success bool, tokenFailedUrl string) //token验证失败跳转页面
+
 type HtmlElem interface {
 	ID() string
 	Type() string
@@ -15,16 +18,18 @@ type HtmlElem interface {
 }
 
 type Frame struct {
-	Router string
-	Title  string
-	Header string
-	Footer string
-	Elems  []HtmlElem
-	Events map[string]HtmlElem
+	Router     string
+	Title      string
+	Header     string
+	Footer     string
+	Elems      []HtmlElem
+	Events     map[string]HtmlElem
+	OnLoad     OnFrameLoad
+	TokenCheck ValidToken
 }
 
-func NewFrame(router, title, header, footer string) *Frame {
-	return &Frame{router, title, header, footer, make([]HtmlElem, 0), make(map[string]HtmlElem, 0)}
+func NewFrame(router, title, header, footer string, onload OnFrameLoad, tokencheck ValidToken) *Frame {
+	return &Frame{router, title, header, footer, make([]HtmlElem, 0), make(map[string]HtmlElem, 0), onload, tokencheck}
 }
 func (f *Frame) AddElem(e HtmlElem) *Frame {
 	f.Elems = append(f.Elems, e)
@@ -47,13 +52,16 @@ func (f *Frame) ID() string {
 	return ""
 }
 func (f *Frame) Clone() HtmlElem {
-	nf := NewFrame(f.Router, f.Title, f.Header, f.Footer)
+	nf := NewFrame(f.Router, f.Title, f.Header, f.Footer, f.OnLoad, f.TokenCheck)
 	for _, r := range f.Elems {
 		nf.AddElem(r.Clone())
 	}
 	return nf
 }
 func (f *Frame) Render(token string) string {
+	if f.OnLoad != nil {
+		f.OnLoad(token)
+	}
 	var buff strings.Builder
 	buff.WriteString(HtmlHeader)
 
@@ -61,27 +69,18 @@ func (f *Frame) Render(token string) string {
 		buff.WriteString(s.Render(token))
 	}
 	//$("#date").val()
-	param := ""
+	param := `"token="+getToken()`
 	cnt := 0
 	for _, s := range f.Events {
 		if s.ID() == "" || s.Type() == "table" ||
 			s.Type() == "row" || s.Type() == "button" {
 			continue
 		}
-		if cnt != 0 {
-			param += "+"
-		}
-		param += "\""
-		if cnt != 0 {
-			param += "&"
-		}
+		param += "+\"&"
 		param += s.ID() + "=\"+" + "$(\"#" + s.ID() + "\").val()"
 		cnt++
 	}
-	if cnt == 0 {
-		param = `""`
-	}
-	param += "}\n"
+	param += "\n}\n"
 
 	buff.WriteString(HtmlScript1)
 	buff.WriteString("return " + param)
