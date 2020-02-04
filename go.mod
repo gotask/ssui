@@ -1,3 +1,3 @@
-module github.com/gotask/gost
+module github.com/gotask/ssui
 
 go 1.13
