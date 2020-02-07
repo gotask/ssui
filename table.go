@@ -27,17 +27,17 @@ type HTable struct {
 }
 
 var HtmlTable = `
-<table class="layui-table layui-text">
+<table class="layui-table layui-text" id="{{.Id}}">
     <thead>
       <tr>
 	{{range .Header}} <th>{{.}}</th> {{end}}
 	{{if .Del}} <th>Tool</th> {{end}}
       </tr> 
     </thead>
- <tbody>{{$del:=.Del}}{{$TId:=.Id}}
-	{{range .Rows}}<tr>
-		{{range .Elems}}<td>{{.Text}}</td>{{end}} 
-		{{if $del}} <td><a class="layui-btn" onclick="tableDel('{{$TId}}', '{{.Id}}')">Del</a></td>{{end}}
+ <tbody>{{$del:=.Del}}{{$add:=.Add}}{{$TId:=.Id}}
+	{{range $i,$v:=.Rows}}<tr>
+		{{range $v.Elems}}<td>{{.Text}}</td>{{end}} 
+		{{if $del}} <td><a class="layui-btn" onclick="tableDel('{{$TId}}', '{{.Id}}')">Del</a>{{if $add}}<a class="layui-btn" onclick="tableCpy('{{$TId}}', {{$i}})">Cpy</a>{{end}} </td>{{end}}
 	</tr>{{end}}
  </tbody>{{if .Add}} 
     <thead>

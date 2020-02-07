@@ -73,6 +73,15 @@ function tableDel(tid,rid){
 	});
 }
 
+function tableCpy(tid,ridx){
+	var table = document.getElementById(tid);
+	var child = table.getElementsByTagName("tr")[ridx + 1];
+	var cols = child.getElementsByTagName("td");
+	for(j = 0; j < cols.length-1; j++) {
+	   document.getElementById(tid+"_"+j).value=cols[j].innerText;
+	} 
+}
+
 function buttonClick(e){
 	var url = "/button_click?event_id="+e+"&url_router="+window.location.pathname+"&"+getAllElemVal();
 	var $ = layui.jquery;
