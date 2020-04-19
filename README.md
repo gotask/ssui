@@ -10,11 +10,13 @@ import (
 	"strings"
 
 	"github.com/gotask/gost/stconfig"
+	"github.com/gotask/gost/stlog"
 	"github.com/gotask/gost/stutil"
 	"github.com/gotask/ssui"
 )
 
 func Display() error {
+	LOG := stlog.NewFileLogger("sync.log")
 	c, e := stconfig.LoadINI("sync.ini")
 	if e != nil {
 		stutil.FileCreateAndWrite("sync.ini", `[system]
@@ -109,7 +111,6 @@ completex = build
 	}))
 	f.AddElem(ssui.NewLegend("SYNC"))
 	f.AddElem(ssui.NewRow().AddElem(ssui.NewLabel("sync同步配置表")).AddElem(ssui.NewButton("resync", "重新同步", func(param map[string]string) *ssui.HResponse {
-		SyncW.Reload(true)
 		return ssui.ResponseError("开始同步，请观察日志...")
 	})).AddElem(ssui.NewLabel("循环间隔")).AddElem(ssui.NewLineEdit("loopsec", "s", c.StringSection("system", "loopsec", "1"), false)).AddElem(
 		ssui.NewLabel("监听地址")).AddElem(ssui.NewLineEdit("address", ":3030", c.StringSection("system", "address", ":3030"), false)).AddElem(ssui.NewButton("change", "提交", func(param map[string]string) *ssui.HResponse {
