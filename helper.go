@@ -2,17 +2,8 @@
 package ssui
 
 import (
-	"net/http"
 	"strconv"
 )
-
-func GetToken(r *http.Request) string {
-	r.ParseForm()
-	if v, ok := r.Form["token"]; ok {
-		return v[0]
-	}
-	return ""
-}
 
 func Value(id string, param map[string]string) string {
 	if v, ok := param[id]; ok {
@@ -39,10 +30,6 @@ func Router(param map[string]string) string {
 	return Value("url_router", param)
 }
 
-func Token(param map[string]string) string {
-	return Value("token", param)
-}
-
 func Sender(param map[string]string) string {
 	return Value("event_id", param)
 }
@@ -62,8 +49,4 @@ func TableAddCols(param map[string]string) []string {
 		}
 	}
 	return cols
-}
-
-func GetAppElem(id string, a *HApp, param map[string]string) HtmlElem {
-	return a.GetElem(Token(param), Router(param), id)
 }

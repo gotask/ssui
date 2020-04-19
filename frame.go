@@ -7,43 +7,49 @@ import (
 	"strings"
 )
 
-type OnFrameLoad func(token string)
-type ValidToken func(token string) (success bool, tokenFailedUrl string) //token验证失败跳转页面
-
-type HtmlElem interface {
-	ID() string
-	Type() string
-	Clone() HtmlElem
-	Render(token string) string
-}
+type OnFrameLoad func(user string)
 
 type Frame struct {
-	Router     string
-	Title      string
-	Header     string
-	Footer     string
-	Elems      []HtmlElem
-	Events     map[string]HtmlElem
-	OnLoad     OnFrameLoad
-	TokenCheck ValidToken
+	Router string
+	Title  string
+	Icon   string
+	Elems  []HtmlElem
+	Events map[string]HtmlElem
+	OnLoad OnFrameLoad
 }
 
-func NewFrame(router, title, header, footer string, onload OnFrameLoad, tokencheck ValidToken) *Frame {
-	return &Frame{router, title, header, footer, make([]HtmlElem, 0), make(map[string]HtmlElem, 0), onload, tokencheck}
+//icon https://www.layui.com/doc/element/icon.html#table
+func NewFrame(router, title, icon string, onload OnFrameLoad) *Frame {
+	return &Frame{router, title, icon, make([]HtmlElem, 0), make(map[string]HtmlElem, 0), onload}
 }
 func (f *Frame) AddElem(e HtmlElem) *Frame {
 	f.Elems = append(f.Elems, e)
+	f.addevent(e)
+	return f
+}
+func (f *Frame) addevent(e HtmlElem) {
 	if e.ID() != "" {
 		f.Events[e.ID()] = e
-	}
-	if e.Type() == "row" {
+	} else if e.Type() == "row" {
 		for _, r := range e.(*Row).Elems {
 			if r.ID() != "" {
 				f.Events[r.ID()] = r
+			} else {
+				f.addevent(r)
 			}
 		}
+	} else if e.Type() == "panel" {
+		for _, r := range e.(*Panel).Elems {
+			if r.elem.ID() != "" {
+				f.Events[r.elem.ID()] = r.elem
+			} else {
+				f.addevent(r.elem)
+			}
+		}
+	} else if e.Type() == "card" {
+		f.addevent(e.(*HCard).Header)
+		f.addevent(e.(*HCard).Body)
 	}
-	return f
 }
 func (f *Frame) Type() string {
 	return "frame"
@@ -52,42 +58,49 @@ func (f *Frame) ID() string {
 	return ""
 }
 func (f *Frame) Clone() HtmlElem {
-	nf := NewFrame(f.Router, f.Title, f.Header, f.Footer, f.OnLoad, f.TokenCheck)
+	nf := NewFrame(f.Router, f.Title, f.Icon, f.OnLoad)
 	for _, r := range f.Elems {
 		nf.AddElem(r.Clone())
 	}
 	return nf
 }
-func (f *Frame) Render(token string) string {
-	if f.OnLoad != nil {
-		f.OnLoad(token)
-	}
-	var buff strings.Builder
-	buff.WriteString(HtmlHeader)
 
-	for _, s := range f.Elems {
-		buff.WriteString(s.Render(token))
-	}
+func (f *Frame) buildParams() string {
 	//$("#date").val()
-	param := `"token="+getToken()`
-	cnt := 0
+	param := "\"url_router=" + f.Router + "\""
 	for _, s := range f.Events {
-		if s.ID() == "" || s.Type() == "table" ||
-			s.Type() == "row" || s.Type() == "button" {
+		if s.ID() == "" || s.Type() == "table" || s.Type() == "text" ||
+			s.Type() == "button" || s.Type() == "echart" {
 			continue
 		}
 		param += "+\"&"
 		param += s.ID() + "=\"+" + "$(\"#" + s.ID() + "\").val()"
-		cnt++
 	}
-	param += "\n}\n"
+	param += ";\n}\n"
+	return param
+}
 
-	buff.WriteString(HtmlScript1)
-	buff.WriteString("return " + param)
-	buff.WriteString(HtmlScript2)
+func (f *Frame) RenderFrame() string {
+	var buff strings.Builder
+
+	buff.WriteString(HtmlHeader)
+	for _, s := range f.Elems {
+		buff.WriteString(s.Render())
+	}
+
+	buff.WriteString(HtmlScript)
+	buff.WriteString("return " + f.buildParams())
+	buff.WriteString(HtmlScriptFrame)
+
 	buff.WriteString(HtmlFooter)
+	return buff.String()
+}
+
+func (f *Frame) Render() string {
+	var buff strings.Builder
+
 	te := template.New("frame")
-	t, e := te.Parse(buff.String())
+	t, e := te.Parse(HtmlPage1)
 	if e != nil {
 		return e.Error()
 	}
@@ -96,5 +109,20 @@ func (f *Frame) Render(token string) string {
 	if e != nil {
 		return e.Error()
 	}
-	return b.String()
+	buff.WriteString(b.String())
+
+	buff.WriteString(HtmlHeader)
+	for _, s := range f.Elems {
+		buff.WriteString(s.Render())
+	}
+
+	buff.WriteString(HtmlScript)
+	buff.WriteString("return " + f.buildParams())
+	buff.WriteString(HtmlScriptPage)
+
+	buff.WriteString(HtmlFooter)
+
+	buff.WriteString(HtmlPage2)
+
+	return buff.String()
 }

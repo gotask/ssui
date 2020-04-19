@@ -1,34 +1,24 @@
 // label.go
 package ssui
 
-import (
-	"fmt"
-	"strings"
-)
-
 type HLabel struct {
+	*ElemBase
 	Text string
 }
 
-var HtmlLabel = `<div class="layui-form-item">
-<label>%s</label>
+var HtmlLabel = `<div class="layui-form-item {{if .Hide}}layui-hide{{end}}">
+<label class="layui-form-label" style="text-align:{{.Align}};">{{RawString .Text}}</label>
 </div>`
 
 func NewLabel(text string) *HLabel {
-	return &HLabel{text}
+	l := &HLabel{newElem("", "label", HtmlLabel), text}
+	l.Align = "left"
+	l.self = l
+	return l
 }
-func (l *HLabel) Type() string {
-	return "label"
-}
-func (l *HLabel) ID() string {
-	return ""
-}
+
 func (l *HLabel) Clone() HtmlElem {
-	return NewLabel(l.Text)
-}
-func (l *HLabel) Render(token string) string {
-	var buf strings.Builder
-	fmt.Fprintf(&buf, HtmlLabel, l.Text)
-	buf.WriteString("\n")
-	return buf.String()
+	nl := NewLabel(l.Text)
+	nl.ElemBase.clone(l.ElemBase)
+	return nl
 }

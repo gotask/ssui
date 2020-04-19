@@ -1,43 +1,37 @@
 // checkbox.go
 package ssui
 
-import (
-	"bytes"
-	"html/template"
-)
-
 type HCheckBox struct {
-	Id      string
+	*ElemBase
 	Text    string
 	Checked bool
 }
 
-var HtmlCheckBox = `<div class="layui-form-item">
-<input type="checkbox" lay-filter="layui_checkbox" id="{{.Id}}" title="{{.Text}}" {{if .Checked}}value="1" checked=""{{else}}value="0"{{end}}>
+var HtmlCheckBox = `<div class="layui-form-item {{if .Hide}}layui-hide{{end}}">
+<input class="layui-form-checkbox" lay-filter="{{.Id}}" {{if .Disable}}disabled=""{{end}} type="checkbox" id="{{.Id}}" title="{{.Text}}" {{if .Checked}}value="1" checked=""{{else}}value="0"{{end}}>
+<script>
+	layui.use(['form'], function () {
+	     var $ = layui.jquery,
+	         form = layui.form;
+	    
+		form.on('checkbox({{.Id}})', function (data) {
+		   if(data.elem.checked){
+				$("#{{.Id}}").val('1');
+			}else{
+				$("#{{.Id}}").val('0');
+			}
+	   	});
+	});
+</script>
 </div>`
 
 func NewCheckBox(id, text string, checked bool) *HCheckBox {
-	return &HCheckBox{id, text, checked}
+	c := &HCheckBox{newElem(id, "checkbox", HtmlCheckBox), text, checked}
+	c.self = c
+	return c
 }
-func (b *HCheckBox) Type() string {
-	return "checkbox"
-}
-func (b *HCheckBox) ID() string {
-	return b.Id
-}
-func (b *HCheckBox) Clone() HtmlElem {
-	return NewCheckBox(b.Id, b.Text, b.Checked)
-}
-func (b *HCheckBox) Render(token string) string {
-	te := template.New("checkbox")
-	t, e := te.Parse(HtmlCheckBox)
-	if e != nil {
-		return e.Error()
-	}
-	buf := bytes.NewBufferString("")
-	e = t.Execute(buf, b)
-	if e != nil {
-		return e.Error()
-	}
-	return buf.String()
+func (c *HCheckBox) Clone() HtmlElem {
+	nc := NewCheckBox(c.Id, c.Text, c.Checked)
+	nc.ElemBase.clone(c.ElemBase)
+	return nc
 }

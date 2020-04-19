@@ -1,36 +1,23 @@
 // textarea.go
 package ssui
 
-import (
-	"fmt"
-	"strings"
-)
-
 type HTextArea struct {
-	Id     string
+	*ElemBase
 	Prompt string
 	Text   string
 }
 
-var HtmlTextArea = `<div class="layui-form-item">
-<textarea id="%s" placeholder="%s" class="layui-textarea">%s</textarea>
+var HtmlTextArea = `<div class="layui-form-item {{if .Hide}}layui-hide{{end}}">
+<textarea id="{{.Id}}" {{if .Disable}}disabled=""{{end}} placeholder="{{.Prompt}}" class="layui-textarea">{{RawString .Text}}</textarea>
 </div>`
 
 func NewTextArea(id, prompt, text string) *HTextArea {
-	return &HTextArea{id, prompt, text}
+	t := &HTextArea{newElem(id, "textarea", HtmlTextArea), prompt, text}
+	t.self = t
+	return t
 }
-func (l *HTextArea) Type() string {
-	return "textarea"
-}
-func (l *HTextArea) ID() string {
-	return l.Id
-}
-func (l *HTextArea) Clone() HtmlElem {
-	return NewTextArea(l.Id, l.Prompt, l.Text)
-}
-func (l *HTextArea) Render(token string) string {
-	var buf strings.Builder
-	fmt.Fprintf(&buf, HtmlTextArea, l.Id, l.Prompt, l.Text)
-	buf.WriteString("\n")
-	return buf.String()
+func (t *HTextArea) Clone() HtmlElem {
+	nt := NewTextArea(t.Id, t.Prompt, t.Text)
+	nt.ElemBase.clone(t.ElemBase)
+	return nt
 }

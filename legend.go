@@ -1,34 +1,22 @@
 // legend.go
 package ssui
 
-import (
-	"fmt"
-	"strings"
-)
-
 type HLegend struct {
+	*ElemBase
 	Text string
 }
 
-var HtmlLegend = `<fieldset class="layui-elem-field layui-field-title" style="margin-top: 30px;">
-  <legend>%s</legend>
+var HtmlLegend = `<fieldset class="layui-elem-field layui-field-title {{if .Hide}}layui-hide{{end}}" style="margin-top: 30px;">
+  <legend>{{RawString .Text}}</legend>
 </fieldset>`
 
 func NewLegend(text string) *HLegend {
-	return &HLegend{text}
-}
-func (l *HLegend) Type() string {
-	return "legend"
-}
-func (l *HLegend) ID() string {
-	return ""
+	l := &HLegend{newElem("", "legend", HtmlLegend), text}
+	l.self = l
+	return l
 }
 func (l *HLegend) Clone() HtmlElem {
-	return NewLegend(l.Text)
-}
-func (l *HLegend) Render(token string) string {
-	var buf strings.Builder
-	fmt.Fprintf(&buf, HtmlLegend, l.Text)
-	buf.WriteString("\n")
-	return buf.String()
+	nl := NewLegend(l.Text)
+	nl.ElemBase.clone(l.ElemBase)
+	return nl
 }

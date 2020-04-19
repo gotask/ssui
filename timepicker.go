@@ -1,13 +1,8 @@
 // timepicker.go
 package ssui
 
-import (
-	"bytes"
-	"html/template"
-)
-
 type HTimePicker struct {
-	Id string
+	*ElemBase
 	//y代表年M代表月,以此类推,例如: yyyy-MM-dd HH:mm:ss yyyy年M月 yyyy年的M月某天晚上，大概H点 dd/MM/yyyy ...
 	Format string
 	Value  int64 //1970年以来的ms数
@@ -28,33 +23,22 @@ var HtmlTimePicker = `<div class="layui-form-item">
             ,format: '{{.Format}}'
             ,value: new Date({{if gt .Value 0}}{{.Value}}{{end}})
             ,isInitValue: true
+            ,done: function(value, date, endDate){
+			    //console.log(value); //得到日期生成的值，如：2017-08-18
+			}
         });
 	});
 </script>
 </div>`
 
+//y代表年M代表月,以此类推,例如: yyyy-MM-dd HH:mm:ss yyyy年M月 yyyy年的M月某天晚上，大概H点 dd/MM/yyyy ... 1970年以来的ms数
 func NewTimePicker(id, format string, val int64) *HTimePicker {
-	return &HTimePicker{id, format, val}
+	p := &HTimePicker{newElem(id, "timepicker", HtmlTimePicker), format, val}
+	p.self = p
+	return p
 }
-func (s *HTimePicker) Type() string {
-	return "timepicker"
-}
-func (s *HTimePicker) ID() string {
-	return s.Id
-}
-func (s *HTimePicker) Clone() HtmlElem {
-	return NewTimePicker(s.Id, s.Format, s.Value)
-}
-func (s *HTimePicker) Render(token string) string {
-	te := template.New("timepicker")
-	t, e := te.Parse(HtmlTimePicker)
-	if e != nil {
-		return e.Error()
-	}
-	buf := bytes.NewBufferString("")
-	e = t.Execute(buf, s)
-	if e != nil {
-		return e.Error()
-	}
-	return buf.String()
+func (p *HTimePicker) Clone() HtmlElem {
+	np := NewTimePicker(p.Id, p.Format, p.Value)
+	np.ElemBase.clone(p.ElemBase)
+	return np
 }

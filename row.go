@@ -29,13 +29,13 @@ func (l *Row) Clone() HtmlElem {
 	}
 	return nl
 }
-func (l *Row) Render(token string) string {
+func (l *Row) Render() string {
 	var buff strings.Builder
 	buff.WriteString(`<div class="layui-form-item">`)
 
 	for _, s := range l.Elems {
 		buff.WriteString(`<div class="layui-inline">`)
-		buff.WriteString(s.Render(token))
+		buff.WriteString(s.Render())
 		buff.WriteString(`</div>`)
 	}
 	buff.WriteString(`</div>`)

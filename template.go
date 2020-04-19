@@ -1,41 +1,42 @@
 // template.go
 package ssui
 
-var HtmlHeader = `<!DOCTYPE html>
+var HtmlPage1 = `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
   <title>{{.Title}}</title>
-  <link rel="shortcut icon" type="image/ico" href="/layui/favicon.ico" />
-  <link rel="stylesheet" href="/layui/css/layui.css">
-  <script src="/layui/layui.js"></script>
+  <link rel="icon" href="/uilib/images/favicon.ico">
+  <link rel="stylesheet" href="/uilib/layui/css/layui.css" media="all">
+  <script src="/uilib/layui/layui.js" charset="utf-8"></script>
+  <script src="uilib/js/lay-config.js" charset="utf-8"></script>
 </head>
 <body>
-
-<div class="layui-header" style="text-align:center;">
-   <h1>{{.Header}}</h1>
-</div>
-
+<div class="layui-layout">
 <div class="layui-container">
-<div class="layui-main">
-<form class="layui-form layui-form-pane" action="">
 `
 
-var HtmlFooter = `
-<pre class="layui-code" id="retcode" ></pre>
-</form>
-
+var HtmlPage2 = `
 </div>
-</div>
-
-<div class="layui-footer" style="text-align:center;">
-    <span>{{.Footer}}</span>
 </div>
 </body>
-</html>`
+</html>
+`
 
-var HtmlScript1 = `<script>
+var HtmlHeader = `
+	<form class="layui-form" action="">
+	<div class="layui-row">
+`
+
+var HtmlFooter = `    	</div>
+		</form>
+</div>
+</div>
+`
+
+var HtmlScript = `
+<script>
 layui.use(['form'], function () {
         var $ = layui.jquery,
             form = layui.form;
@@ -47,6 +48,9 @@ layui.use(['form'], function () {
 				data.elem.value = '0';
 		  }
 		});
+		form.render('select');
+		form.render('radio');
+		form.render('checkbox');
 });
 
 function isEmpty(obj){
@@ -57,35 +61,12 @@ function isEmpty(obj){
     }
 }
 
-function tableDel(tid,rid){
-	var layer = layui.layer;
-	layer.msg('Delete?', {
-	  time: 0 //不自动关闭
-	  ,btn: ['OK', 'Cancel']
-	  ,yes: function(index){
-	    layer.close(index);
-	    var url = "/table_del?event_id="+tid+"&token="+getToken()+"&url_router="+window.location.pathname+"&rowid="+rid;
-		var $ = layui.jquery;
-		$.get(url,function(ret){
-			handleRsp(ret);
-	    });
-	  }
-	});
-}
-
-function tableCpy(tid,ridx){
-	var table = document.getElementById(tid);
-	var child = table.getElementsByTagName("tr")[ridx + 1];
-	var cols = child.getElementsByTagName("td");
-	for(j = 0; j < cols.length-1; j++) {
-	   document.getElementById(tid+"_"+j).value=cols[j].innerText;
-	} 
-}
-
 function buttonClick(e){
-	var url = "/button_click?event_id="+e+"&url_router="+window.location.pathname+"&"+getAllElemVal();
+	var url = "/button_click?event_id="+e+"&"+getAllElemVal();
 	var $ = layui.jquery;
+	var loading = layer.load(0, {shade: false, time: 10 * 1000});
 	$.get(url,function(ret){
+		layer.close(loading);
 		handleRsp(ret);
     });
 }
@@ -94,66 +75,31 @@ function handleRsp(ret){
 	var $ = layui.jquery;
 	var layer = layui.layer;
 	var obj = JSON.parse(ret);
- 	console.log(obj)
-	if(!isEmpty(obj.Token)){
-		 setToken(obj.Token);
-	}
+	var miniPage = layui.miniPage;
+ 	console.log(obj);
+
 	if(!isEmpty(obj.Error)){
-		 layer.msg(obj.Error);
-	}else if(!isEmpty(obj.EchoText)){
-		 $('#retcode').html(obj.EchoText+"<br>"+$('#retcode').html());
-	}else if(obj.ShowInDialog){
-		layer.open({
-		  type: 2,
-		  area: ['700px', '450px'],
-		  fixed: false, //不固定
-		  maxmin: true,
-		  content: obj.RedirectUrl
-		});
-	}else{
-		redirectUrl(obj.RedirectUrl)
+		layer.msg(obj.Error);
 	}
-}
+	
 
-function getToken(){
-	var usertoken = layui.data('userdata').token;
-	if(isEmpty(usertoken)){
-		return ""
+	if(obj.SelfClose){
+		var index = parent.layer.getFrameIndex(window.name);
+		parent.layer.close(index);
 	}
-	return usertoken
-}
 
-function setToken(token){
-	if(isEmpty(token)){
-		return
-	}
-	layui.data('userdata', {
-        key: 'token'
-        ,value: token
-    });
-}
-function delToken(){
-	layui.data('userdata', {
-        key: 'token'
-        ,remove: true
-    });
-}
-
-function redirectUrl(url){
-	if(isEmpty(url)){
-		location.reload();
-	}else{
-		var usertoken = layui.data('userdata').token;
-		if(isEmpty(usertoken)){
-			window.location.href=url
-			return
-		}
-		if(url.indexOf("?")<0){
-			url=url+"?"
+	if(!isEmpty(obj.RedirectUrl))
+	{
+		if(!isEmpty(obj.ShowInDialog)){
+			var index=layer.open({
+			  	type: 2,
+				title: obj.ShowInDialog,
+				area: ['50%', '70%'], //宽高
+			  	content: obj.RedirectUrl
+			});
 		}else{
-			url=url+"&"
+			redirectUrl(obj.RedirectUrl);
 		}
-		window.location.href=url+"token="+getToken();
 	}
 }
 
@@ -161,15 +107,30 @@ function getAllElemVal(){
 	var $ = layui.jquery;
 `
 
-var HtmlScript2 = `
-</script>`
+var HtmlScriptFrame = `
 
-func SliceElem(s []string, i int) string {
-	if len(s) == 0 {
-		return ""
+function redirectUrl(url){
+	var miniPage = layui.miniPage;
+	var hashStr = window.location.hash.replace("#","");
+	if(isEmpty(url)){
+		miniPage.local();
+		return;
+	}else if(hashStr == url){
+		miniPage.reload(url);
+		return;
 	}
-	if i >= len(s) {
-		i = 0
-	}
-	return s[i]
+	window.location.hash = url;
 }
+</script>
+`
+
+var HtmlScriptPage = `
+
+function redirectUrl(url){
+	if(isEmpty(url) || window.location.href==url){
+		location.reload();
+	}else{
+		window.location.href=url;
+	}
+}
+</script>`
