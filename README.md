@@ -17,6 +17,7 @@ import (
 
 func Display() error {
 	LOG := stlog.NewFileLogger("sync.log")
+	defer LOG.Close()
 	c, e := stconfig.LoadINI("sync.ini")
 	if e != nil {
 		stutil.FileCreateAndWrite("sync.ini", `[system]
