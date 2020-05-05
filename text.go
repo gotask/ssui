@@ -15,10 +15,14 @@ func (t *HText) SetText(s string) {
 	t.Text = s
 }
 
-var HtmlText = `<div class="layui-form-item %s">
+/*var HtmlText = `<div class="layui-form-item %s">
 <xmp class="layui-code">%s</xmp>
 </div>
 `
+*/
+var HtmlText = `<div class="layui-form-item %s">
+<pre class="layui-code">%s</pre>
+</div>`
 
 func NewText(id, text string) *HText {
 	t := &HText{newElem(id, "text", HtmlText), text}
