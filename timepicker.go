@@ -5,7 +5,14 @@ type HTimePicker struct {
 	*ElemBase
 	//y代表年M代表月,以此类推,例如: yyyy-MM-dd HH:mm:ss yyyy年M月 yyyy年的M月某天晚上，大概H点 dd/MM/yyyy ...
 	Format string
-	Value  int64 //1970年以来的ms数
+	/*year	年选择器	只提供年列表选择
+	  month	年月选择器	只提供年、月选择
+	  date	日期选择器	可选择：年、月、日。type默认值，一般可不填
+	  time	时间选择器	只提供时、分、秒选择
+	  datetime	日期时间选择器	可选择：年、月、日、时、分、秒
+	*/
+	DisplayType string //默认datetime
+	Value       int64  //默认显示时间 1970年以来的ms数
 }
 
 var HtmlTimePicker = `<div class="layui-form-item">
@@ -19,7 +26,7 @@ var HtmlTimePicker = `<div class="layui-form-item">
 	    //日期
         laydate.render({
             elem: '#{{.Id}}'
-			,type: 'datetime'
+			,type: '{{.DisplayType}}'
             ,format: '{{.Format}}'
             ,value: new Date({{if gt .Value 0}}{{.Value}}{{end}})
             ,isInitValue: true
@@ -32,13 +39,16 @@ var HtmlTimePicker = `<div class="layui-form-item">
 </div>`
 
 //y代表年M代表月,以此类推,例如: yyyy-MM-dd HH:mm:ss yyyy年M月 yyyy年的M月某天晚上，大概H点 dd/MM/yyyy ... 1970年以来的ms数
-func NewTimePicker(id, format string, val int64) *HTimePicker {
-	p := &HTimePicker{newElem(id, "timepicker", HtmlTimePicker), format, val}
+func NewTimePicker(id, format, displaytype string, val int64) *HTimePicker {
+	if displaytype == "" {
+		displaytype = "datetime"
+	}
+	p := &HTimePicker{newElem(id, "timepicker", HtmlTimePicker), format, displaytype, val}
 	p.self = p
 	return p
 }
 func (p *HTimePicker) Clone() HtmlElem {
-	np := NewTimePicker(p.Id, p.Format, p.Value)
+	np := NewTimePicker(p.Id, p.Format, p.DisplayType, p.Value)
 	np.ElemBase.clone(p.ElemBase)
 	return np
 }
