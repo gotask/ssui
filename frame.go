@@ -77,20 +77,28 @@ func (f *Frame) buildParams() string {
 		param += s.ID() + "=\"+" + "$(\"#" + s.ID() + "\").val()"
 	}
 	param += ";\n}\n"
-	return param
+	return param + f.buildFunc()
+}
+
+func (f *Frame) buildFunc() string {
+	fun := "function getRouter(){return \""
+	fun += f.Router
+	fun += "\"}\n"
+	return fun
 }
 
 func (f *Frame) RenderFrame() string {
 	var buff strings.Builder
 
 	buff.WriteString(HtmlHeader)
-	for _, s := range f.Elems {
-		buff.WriteString(s.Render())
-	}
 
 	buff.WriteString(HtmlScript)
 	buff.WriteString("return " + f.buildParams())
 	buff.WriteString(HtmlScriptFrame)
+
+	for _, s := range f.Elems {
+		buff.WriteString(s.Render())
+	}
 
 	buff.WriteString(HtmlFooter)
 	return buff.String()
@@ -112,13 +120,14 @@ func (f *Frame) Render() string {
 	buff.WriteString(b.String())
 
 	buff.WriteString(HtmlHeader)
-	for _, s := range f.Elems {
-		buff.WriteString(s.Render())
-	}
 
 	buff.WriteString(HtmlScript)
 	buff.WriteString("return " + f.buildParams())
 	buff.WriteString(HtmlScriptPage)
+
+	for _, s := range f.Elems {
+		buff.WriteString(s.Render())
+	}
 
 	buff.WriteString(HtmlFooter)
 

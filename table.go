@@ -19,16 +19,8 @@ var (
 	TCNormal TableColumnType = 0
 	TCImg    TableColumnType = 1
 	TCUrl    TableColumnType = 2
+	TSort    TableColumnType = 3
 )
-
-var GlobalTables = make(map[string]*HTable, 0)
-
-func GetTable(id string) *HTable {
-	if t, ok := GlobalTables[id]; ok {
-		return t
-	}
-	return nil
-}
 
 type OnTableGetData func(user string, page, limit int, searchtxt string) (total int, data [][]string)
 type OnTableEvent func(user string, t TableOperType, cols []string) ApiRsp
@@ -40,17 +32,29 @@ type HTable struct {
 	ColType []int
 	Tool    bool
 	Search  bool
+	Page    bool
 
 	funcData  OnTableGetData
 	funcEvent OnTableEvent
 	funcUrl   OnTableUrl
+
+	Data [][]string
+	Key  []int //primary key,default colum 0
+}
+
+func NewStaticTable(id string, header []string, data [][]string) *HTable {
+	h := make([]string, len(header), len(header))
+	copy(h, header)
+	t := &HTable{newElem(id, "table", HtmlTable), h, make([]int, len(header), len(header)), false, false, true, nil, nil, nil, nil, []int{0}}
+	t.self = t
+	t.Data = data
+	return t
 }
 
 func NewTable(id string, header []string, gd OnTableGetData) *HTable {
 	h := make([]string, len(header), len(header))
 	copy(h, header)
-	t := &HTable{newElem(id, "table", HtmlTable), h, make([]int, len(header), len(header)), false, false, gd, nil, nil}
-	GlobalTables[id] = t
+	t := &HTable{newElem(id, "table", HtmlTable), h, make([]int, len(header), len(header)), false, false, true, gd, nil, nil, nil, []int{0}}
 	t.self = t
 	return t
 }
@@ -63,11 +67,86 @@ func NewToolTable(id string, search bool, header []string, gd OnTableGetData, ev
 	return t
 }
 
+func (table *HTable) SetData(data [][]string) {
+	table.Data = data
+}
 func (table *HTable) SetColumnType(index int, c TableColumnType) {
 	table.ColType[index] = int(c)
 }
 func (table *HTable) SetUrlHandler(funcUrl OnTableUrl) {
 	table.funcUrl = funcUrl
+}
+func (table *HTable) SetPage(b bool) {
+	table.Page = b
+}
+func (table *HTable) SetTool(b bool) {
+	table.Tool = b
+}
+func (table *HTable) SetKey(key []int) {
+	table.Key = key
+}
+
+func (table *HTable) TableGetData(user string, page, limit int, searchtxt string) (total int, data [][]string) {
+	all := table.Data
+	if searchtxt != "" {
+		all = make([][]string, 0, 0)
+		for _, v := range table.Data {
+			for _, c := range v {
+				if strings.Contains(c, searchtxt) {
+					all = append(all, v)
+					break
+				}
+			}
+		}
+	}
+	if page > 0 && len(all) > limit {
+		begin := (page - 1) * limit
+		end := begin + limit
+		for i := begin; i >= 0 && i < len(all) && i < end; i++ {
+			data = append(data, all[i])
+		}
+	} else {
+		data = all
+	}
+	return len(all), data
+}
+
+func (table *HTable) TableEvent(user string, t TableOperType, cols []string) ApiRsp {
+	if len(cols) != len(table.Header) {
+		return ApiRsp{1, "error param"}
+	}
+	if t == TOEdit {
+		for _, v := range table.Data {
+			find := true
+			for _, k := range table.Key {
+				if cols[k] != v[k] {
+					find = false
+					break
+				}
+			}
+			if find {
+				copy(v, cols)
+				break
+			}
+		}
+	} else if t == TOAdd {
+		table.Data = append(table.Data, cols)
+	} else if t == TODel {
+		for i, v := range table.Data {
+			find := true
+			for _, k := range table.Key {
+				if cols[k] != v[k] {
+					find = false
+					break
+				}
+			}
+			if find {
+				table.Data = append(table.Data[:i], table.Data[i+1:]...)
+				break
+			}
+		}
+	}
+	return ApiRsp{0, ""}
 }
 
 var TempTable = `
@@ -120,6 +199,7 @@ var HtmlTable = `
 		var $ = layui.jquery;
 		var table = layui.table;
 		var url = "/api/table?event_id={{.Id}}&oper="+op{{range $k,$v:=.Header}}+"&{{$k}}="+$("#{{$TId}}_col{{$k}}").val(){{end}};
+		url = url+"&url_router="+getRouter();
 		$.get(url,function(res){
 			var r = JSON.parse(res);
 			ret = r.code;
@@ -138,19 +218,19 @@ var HtmlTable = `
 	        var $ = layui.jquery,
 	            table = layui.table,
 				laytpl = layui.laytpl;
-
+			var url="/api/table?event_id={{.Id}}&oper=data&url_router="+getRouter();
 			table.render({
 			    elem: '#{{.Id}}'
-			    ,url:'/api/table?event_id={{.Id}}&oper=data'
+			    ,url: url
 				{{if .Tool}},toolbar:'#{{.Id}}_toolbarHeader'{{end}}
 				{{if .Tool}},defaultToolbar: [{title: '新加',layEvent: 'LAYTABLE_ADD',icon: 'layui-icon-addition'},'filter', 'exports', 'print']{{end}}
-				,page:true
-				,limit: 30
-				,limits:[10,30,50,70,90,100]
+				{{if .Page}},page:true{{end}}
+				,limit: 50
+				,limits:[30,50,100,500,1000,10000]
 				,id:'{{.Id}}'
 			    ,cols: [[
 	{{range $i,$v:=.Header}} {{if gt $i 0}},{{end}} {field:'col{{$i}}', title: '{{$v}}',align: 'center', {{$ty:=IntSliceElem $.ColType $i}}
-		{{if eq $i 0}}sort: true,{{end}}
+		{{if eq $ty 3}}sort: true,{{end}}
 		{{if eq $ty 1}} event: 'img_col{{$i}}', templet: function(d){return '<a href="javascript:;"><img src='+d.col{{RawInt $i}}+'></a>'} {{end}}
 		{{if eq $ty 2}} event: 'url_col{{$i}}', templet: function(d){return '<a class="layui-table-link" href="javascript:;">'+d.col{{RawInt $i}}+'</a>'} {{end}} }
 	{{end}}
@@ -214,7 +294,7 @@ var HtmlTable = `
 				});
 		    } else if(obj.event === 'del'){
 		      layer.confirm('确认删除', function(index){
-				$.get("/api/table?event_id={{.Id}}&oper=del"{{range $i,$v:=.Header}}+"&{{$i}}="+data[{{$i}}]{{end}},function(res){
+				$.get("/api/table?event_id={{.Id}}&oper=del"{{range $i,$v:=.Header}}+"&{{$i}}="+data[{{$i}}]{{end}}+"&url_router="+getRouter(),function(res){
 					var r = JSON.parse(res);
 					ret = r.code;
 	                if(ret == 0){
@@ -275,7 +355,7 @@ var HtmlTable = `
 						  	type: 2,
 							title: "预览",
 							area: ['50%', '70%'], //宽高
-						  	content: "/api/table?event_id={{.Id}}&oper=url&href="+url
+						  	content: "/api/table?event_id={{.Id}}&oper=url&href="+url+"&url_router="+getRouter()
 						});
 					}
 				}

@@ -291,19 +291,27 @@ func HandleTable(a *HApp) {
 		params := a.ParseHttpParams(r)
 		user := params["username"]
 		event_id := params["event_id"]
-		tb := GetTable(event_id)
-		if tb == nil {
+		url_router := params["url_router"]
+		tbnew := a.GetElem(user, url_router, event_id)
+		if tbnew == nil {
 			io.WriteString(w, `{"code":1,"msg":"no table","count":0,"data":[]}`)
 			return
 		}
+		tb := tbnew.(*HTable)
 		oper := params["oper"]
-		if oper == "data" && tb.funcData != nil {
+		if oper == "data" {
 			page := params["page"]
 			limit := params["limit"]
 			p, _ := strconv.Atoi(page)
 			l, _ := strconv.Atoi(limit)
 			sr := params["key[search]"]
-			cnt, data := tb.funcData(user, p, l, sr)
+			var cnt int
+			var data [][]string
+			if tb.funcData != nil {
+				cnt, data = tb.funcData(user, p, l, sr)
+			} else {
+				cnt, data = tb.TableGetData(user, p, l, sr)
+			}
 			retData := ""
 			ln := 0
 			for _, cols := range data {
@@ -327,16 +335,34 @@ func HandleTable(a *HApp) {
 				}
 			}
 			io.WriteString(w, fmt.Sprintf("{\"code\":0,\"msg\":\"\",\"count\":%d,\"data\":[%s]}", cnt, retData))
-		} else if oper == "edit" && tb.funcEvent != nil {
-			res := tb.funcEvent(user, TOEdit, TableAddCols(params))
+		} else if oper == "edit" {
+			var res ApiRsp
+			if tb.funcEvent != nil {
+				res = tb.funcEvent(user, TOEdit, TableAddCols(params))
+			} else {
+				res = tb.TableEvent(user, TOEdit, TableAddCols(params))
+			}
+
 			ret_json, _ := json.Marshal(res)
 			io.WriteString(w, string(ret_json))
-		} else if oper == "del" && tb.funcEvent != nil {
-			res := tb.funcEvent(user, TODel, TableAddCols(params))
+		} else if oper == "del" {
+			var res ApiRsp
+			if tb.funcEvent != nil {
+				res = tb.funcEvent(user, TODel, TableAddCols(params))
+			} else {
+				res = tb.TableEvent(user, TODel, TableAddCols(params))
+			}
+
 			ret_json, _ := json.Marshal(res)
 			io.WriteString(w, string(ret_json))
 		} else if oper == "add" && tb.funcEvent != nil {
-			res := tb.funcEvent(user, TOAdd, TableAddCols(params))
+			var res ApiRsp
+			if tb.funcEvent != nil {
+				res = tb.funcEvent(user, TOAdd, TableAddCols(params))
+			} else {
+				res = tb.TableEvent(user, TOAdd, TableAddCols(params))
+			}
+
 			ret_json, _ := json.Marshal(res)
 			io.WriteString(w, string(ret_json))
 		} else if oper == "url" {
