@@ -301,6 +301,7 @@ var HtmlTable = `
 		        		obj.del();
 	                    layer.msg('删除成功');
 		        		layer.close(index);
+						table.reload('{{.Id}}');
 	                }else{
 	                    layer.msg(r.msg);
 	                }
