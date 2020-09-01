@@ -22,3 +22,9 @@ func (c *HCard) Clone() HtmlElem {
 	nc.ElemBase.clone(c.ElemBase)
 	return nc
 }
+
+func (c *HCard) SetRouter(r string) {
+	c.ElemBase.SetRouter(r)
+	c.Header.SetRouter(r)
+	c.Body.SetRouter(r)
+}

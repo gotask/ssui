@@ -25,6 +25,7 @@ func NewFrame(router, title, icon string, onload OnFrameLoad) *Frame {
 func (f *Frame) AddElem(e HtmlElem) *Frame {
 	f.Elems = append(f.Elems, e)
 	f.addevent(e)
+	e.SetRouter(f.Router)
 	return f
 }
 func (f *Frame) addevent(e HtmlElem) {
@@ -56,6 +57,12 @@ func (f *Frame) Type() string {
 }
 func (f *Frame) ID() string {
 	return ""
+}
+func (f *Frame) Route() string {
+	return f.Router
+}
+func (f *Frame) SetRouter(r string) {
+	f.Router = r
 }
 func (f *Frame) Clone() HtmlElem {
 	nf := NewFrame(f.Router, f.Title, f.Icon, f.OnLoad)

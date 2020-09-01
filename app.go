@@ -8,27 +8,40 @@ import (
 	"time"
 )
 
+var (
+	Admin_User_Name   = "adminxyz"
+	Token_Expire_Time = 365 * 24 * time.Hour //默认一年
+)
+
+type UserAuthCheck func(user, router string) bool
+
 type HAppData struct {
 	Create time.Time
 	Frames map[string]*Frame
 }
 
 type HApp struct {
-	Address string
-	Title   string
-	Key     string //16 24 32
-	Handler *http.ServeMux
-	Global  *HAppData
-	Data    map[string]*HAppData
-	Group   []*PageGroup
-	Home    *Frame
-	Debug   bool
-	Admin   bool
-	LibPath string
+	address     string               //监听地址
+	title       string               //标题
+	key         string               //秘钥，用于token加密，密码加密，长度16 24 32
+	handler     *http.ServeMux       //url handler
+	global      *HAppData            //全局数据
+	data        map[string]*HAppData //用户数据
+	group       []*PageGroup         //menu
+	home        *Frame               //主页
+	debug       bool                 //debug模式下使用uilib目录
+	admin       bool                 //admin模式
+	libPath     string               //uilib路径
+	authCheck   UserAuthCheck        //验证用户访问权限
+	openRegiste bool                 //是否开放注册
 }
 
 func NewApp(addr string) *HApp {
-	return &HApp{addr, "", "", &http.ServeMux{}, &HAppData{time.Now(), make(map[string]*Frame, 0)}, make(map[string]*HAppData, 0), nil, nil, false, false, ""}
+	return &HApp{address: addr,
+		handler: &http.ServeMux{},
+		global:  &HAppData{time.Now(), make(map[string]*Frame, 0)},
+		data:    make(map[string]*HAppData, 0),
+	}
 }
 
 func NewAdminApp(addr, title, key string) *HApp {
@@ -37,11 +50,24 @@ func NewAdminApp(addr, title, key string) *HApp {
 		key = key + defaultKey
 	}
 	key = key[:16]
-	return &HApp{addr, title, key, &http.ServeMux{}, &HAppData{time.Now(), make(map[string]*Frame, 0)}, make(map[string]*HAppData, 0), nil, nil, false, true, ""}
+	return &HApp{address: addr,
+		title:   title,
+		key:     key,
+		handler: &http.ServeMux{},
+		global:  &HAppData{time.Now(), make(map[string]*Frame, 0)},
+		data:    make(map[string]*HAppData, 0),
+		admin:   true,
+	}
 }
 
 func NewDebugApp(addr, libpath string) *HApp {
-	return &HApp{addr, "", "", &http.ServeMux{}, &HAppData{time.Now(), make(map[string]*Frame, 0)}, make(map[string]*HAppData, 0), nil, nil, true, false, libpath}
+	return &HApp{address: addr,
+		handler: &http.ServeMux{},
+		global:  &HAppData{time.Now(), make(map[string]*Frame, 0)},
+		data:    make(map[string]*HAppData, 0),
+		debug:   true,
+		libPath: libpath,
+	}
 }
 
 func NewAdminDebugApp(addr, title, key, libpath string) *HApp {
@@ -50,36 +76,75 @@ func NewAdminDebugApp(addr, title, key, libpath string) *HApp {
 		key = key + defaultKey
 	}
 	key = key[:16]
-	return &HApp{addr, title, key, &http.ServeMux{}, &HAppData{time.Now(), make(map[string]*Frame, 0)}, make(map[string]*HAppData, 0), nil, nil, true, true, libpath}
+	return &HApp{address: addr,
+		title:   title,
+		key:     key,
+		handler: &http.ServeMux{},
+		global:  &HAppData{time.Now(), make(map[string]*Frame, 0)},
+		data:    make(map[string]*HAppData, 0),
+		admin:   true,
+		debug:   true,
+		libPath: libpath,
+	}
 }
 
-func (a *HApp) UserValidCheck(user, router string) bool {
-	if user == "admin" {
+//是否开放注册
+func (a *HApp) OpenRegiste(r bool) {
+	a.openRegiste = r
+}
+
+// 通过 /mergely?fl=1&fr=2 可以导航到文本比较页面
+func (a *HApp) SetMegelyFileFunc(f OnGetFile) {
+	mergely.F = f
+}
+
+//权限管理
+func (a *HApp) SetAuthCheck(f UserAuthCheck) {
+	a.authCheck = f
+}
+
+//token过期时间
+func (a *HApp) SetTokenExpireTime(d time.Duration) {
+	Token_Expire_Time = d
+}
+
+func (a *HApp) userValidCheck(user, router string) bool {
+	if user == Admin_User_Name {
 		return true
 	}
 	if router == "/authedit" {
 		return false
 	}
+	if a.authCheck != nil {
+		return a.authCheck(user, router)
+	}
+	if a.admin {
+		return false
+	}
 	return true
 }
 
+//添加组
 func (a *HApp) AddPageGroup(p *PageGroup) *HApp {
-	a.Group = append(a.Group, p)
+	a.group = append(a.group, p)
 	return a
 }
 
+//添加页面
 func (a *HApp) AddFrame(f *Frame) *HApp {
-	if a.Home == nil {
-		a.Home = f
+	if a.home == nil {
+		a.home = f
 	}
-	a.Global.Frames[f.Router] = f
+	a.global.Frames[f.Router] = f
 	return a
 }
 
+//重置用户缓存数据
 func (a *HApp) Reset(user string) {
-	delete(a.Data, user)
+	delete(a.data, user)
 }
 
+//获取http请求参数，从token中提取原始的username和token
 func (a *HApp) ParseHttpParams(r *http.Request) map[string]string {
 	r.ParseForm()
 	params := make(map[string]string, 0)
@@ -89,12 +154,16 @@ func (a *HApp) ParseHttpParams(r *http.Request) map[string]string {
 
 	c, e := r.Cookie("token")
 	if e == nil {
-		s, _ := Decrypt(c.Value, a.Key)
+		s, _ := Decrypt(c.Value, a.key)
 		params["token"] = s
 
 		ss := strings.Split(s, "|")
 		if len(ss) > 0 {
-			params["username"] = ss[0]
+			name := ss[0]
+			usr := GetUser(a, name)
+			if usr.Name == name {
+				params["username"] = name
+			}
 		}
 	}
 
@@ -102,15 +171,15 @@ func (a *HApp) ParseHttpParams(r *http.Request) map[string]string {
 }
 
 func (a *HApp) getFrame(user, router string) *Frame {
-	ha, ok := a.Data[user]
+	ha, ok := a.data[user]
 	if !ok {
 		ha = &HAppData{time.Now(), make(map[string]*Frame, 0)}
-		a.Data[user] = ha
+		a.data[user] = ha
 	}
 	if f, ok := ha.Frames[router]; ok {
 		return f
 	}
-	if f, ok := a.Global.Frames[router]; ok {
+	if f, ok := a.global.Frames[router]; ok {
 		nf := f.Clone().(*Frame)
 		ha.Frames[router] = nf
 		return nf
@@ -123,7 +192,7 @@ func (a *HApp) GetFrame(user, router string) *Frame {
 	if f == nil {
 		return f
 	}
-	if !a.UserValidCheck(user, router) {
+	if !a.userValidCheck(user, router) {
 		return nil
 	}
 	return f
@@ -148,30 +217,21 @@ func (a *HApp) addGroup(p *PageGroup) {
 	}
 }
 
-// /mergely?fl=1&fr=2
-func (a *HApp) SetMegelyFileFunc(f OnGetFile) {
-	mergely.F = f
-}
-
-func (a *HApp) SetTokenExpireTime(d time.Duration) {
-	Token_Expire_Time = d
-}
-
 func (a *HApp) Run() error {
 	AuthEdit(a)
-	for _, p := range a.Group {
+	for _, p := range a.group {
 		a.addGroup(p)
 	}
 	UserSetting(a)
 
-	h := a.Handler
+	h := a.handler
 	//css js
 	h.Handle("/uilib/", http.HandlerFunc(func(resp http.ResponseWriter, req *http.Request) {
 		if strings.HasSuffix(req.URL.Path, ".css") {
 			resp.Header().Set("content-type", "text/css; charset=utf-8")
 		}
-		if a.Debug {
-			UILib = http.Dir(a.LibPath)
+		if a.debug {
+			UILib = http.Dir(a.libPath)
 		}
 		http.StripPrefix("/uilib/", http.FileServer(UILib)).ServeHTTP(resp, req)
 	}))
@@ -185,7 +245,7 @@ func (a *HApp) Run() error {
 		w.Write([]byte(mergely.Page(params["fl"], params["fr"])))
 	}))
 
-	for r, _ := range a.Global.Frames {
+	for r, _ := range a.global.Frames {
 		tempr := r
 		h.HandleFunc(r, func(w http.ResponseWriter, r *http.Request) {
 			params := a.ParseHttpParams(r)
@@ -212,7 +272,7 @@ func (a *HApp) Run() error {
 	HandleTable(a)
 	HandleMergelay(a)
 
-	if a.Admin {
+	if a.admin {
 		h.Handle("/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			params := a.ParseHttpParams(r)
 			user := params["username"]
@@ -220,7 +280,7 @@ func (a *HApp) Run() error {
 				w.Write([]byte(LoginHtml))
 				return
 			}
-			s := fmt.Sprintf(IndexHtml, a.Title, user)
+			s := fmt.Sprintf(IndexHtml, a.title, user)
 			w.Write([]byte(s))
 		}))
 		h.Handle("/chpwd", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -240,5 +300,5 @@ func (a *HApp) Run() error {
 		HandleChpwd(a)
 	}
 
-	return http.ListenAndServe(a.Address, h)
+	return http.ListenAndServe(a.address, h)
 }

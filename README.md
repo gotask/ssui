@@ -3,7 +3,6 @@ a simper html ui library for freshman
 
 # example
 ```
-// ui.go
 package main
 
 import (
@@ -205,6 +204,10 @@ completex = build
 		LOG.Info("ui start success: %s", uiaddr)
 	}
 	return err
+}
+
+func main() {
+	Display()
 }
 ```
 ![效果](https://github.com/gotask/images/blob/master/gosync.jpg)

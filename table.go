@@ -38,8 +38,8 @@ type HTable struct {
 	funcEvent OnTableEvent
 	funcUrl   OnTableUrl
 
-	Data [][]string
-	Key  []int //primary key,default colum 0
+	data [][]string
+	key  []int //primary key,default colum 0
 }
 
 func NewStaticTable(id string, header []string, data [][]string) *HTable {
@@ -47,7 +47,7 @@ func NewStaticTable(id string, header []string, data [][]string) *HTable {
 	copy(h, header)
 	t := &HTable{newElem(id, "table", HtmlTable), h, make([]int, len(header), len(header)), false, false, true, nil, nil, nil, nil, []int{0}}
 	t.self = t
-	t.Data = data
+	t.data = data
 	return t
 }
 
@@ -68,7 +68,7 @@ func NewToolTable(id string, search bool, header []string, gd OnTableGetData, ev
 }
 
 func (table *HTable) SetData(data [][]string) {
-	table.Data = data
+	table.data = data
 }
 func (table *HTable) SetColumnType(index int, c TableColumnType) {
 	table.ColType[index] = int(c)
@@ -83,14 +83,14 @@ func (table *HTable) SetTool(b bool) {
 	table.Tool = b
 }
 func (table *HTable) SetKey(key []int) {
-	table.Key = key
+	table.key = key
 }
 
 func (table *HTable) TableGetData(user string, page, limit int, searchtxt string) (total int, data [][]string) {
-	all := table.Data
+	all := table.data
 	if searchtxt != "" {
 		all = make([][]string, 0, 0)
-		for _, v := range table.Data {
+		for _, v := range table.data {
 			for _, c := range v {
 				if strings.Contains(c, searchtxt) {
 					all = append(all, v)
@@ -116,9 +116,9 @@ func (table *HTable) TableEvent(user string, t TableOperType, cols []string) Api
 		return ApiRsp{1, "error param"}
 	}
 	if t == TOEdit {
-		for _, v := range table.Data {
+		for _, v := range table.data {
 			find := true
-			for _, k := range table.Key {
+			for _, k := range table.key {
 				if cols[k] != v[k] {
 					find = false
 					break
@@ -130,18 +130,18 @@ func (table *HTable) TableEvent(user string, t TableOperType, cols []string) Api
 			}
 		}
 	} else if t == TOAdd {
-		table.Data = append(table.Data, cols)
+		table.data = append(table.data, cols)
 	} else if t == TODel {
-		for i, v := range table.Data {
+		for i, v := range table.data {
 			find := true
-			for _, k := range table.Key {
+			for _, k := range table.key {
 				if cols[k] != v[k] {
 					find = false
 					break
 				}
 			}
 			if find {
-				table.Data = append(table.Data[:i], table.Data[i+1:]...)
+				table.data = append(table.data[:i], table.data[i+1:]...)
 				break
 			}
 		}

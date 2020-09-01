@@ -13,6 +13,7 @@ type PanelElem struct {
 }
 
 type Panel struct {
+	*ElemBase
 	phoneWidth int
 	deskWidth  int
 	margin     int
@@ -30,7 +31,7 @@ func NewPanel(phoneWidth, deskWidth, margin int) *Panel {
 	if margin < 1 || margin > 30 {
 		margin = 0
 	}
-	return &Panel{phoneWidth, deskWidth, margin, make([]PanelElem, 0)}
+	return &Panel{&ElemBase{}, phoneWidth, deskWidth, margin, make([]PanelElem, 0)}
 }
 
 //width value:1-12
@@ -50,11 +51,18 @@ func (l *Panel) Type() string {
 func (l *Panel) ID() string {
 	return ""
 }
+func (l *Panel) SetRouter(r string) {
+	l.ElemBase.SetRouter(r)
+	for _, v := range l.Elems {
+		v.elem.SetRouter(r)
+	}
+}
 func (l *Panel) Clone() HtmlElem {
 	nl := NewPanel(l.phoneWidth, l.deskWidth, l.margin)
 	for _, r := range l.Elems {
 		nl.AddElem(r.elem.Clone(), r.phoneWidth, r.deskWidth)
 	}
+	nl.ElemBase.clone(l.ElemBase)
 	return nl
 }
 func (l *Panel) Render() string {

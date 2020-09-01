@@ -76,7 +76,7 @@ func init() {
 
 func encodeUser(a *HApp, ou User) User {
 	var nu User
-	p, e := Encrypt(ou.Pwd, a.Key)
+	p, e := Encrypt(ou.Pwd, a.key)
 	if e != nil {
 		return nu
 	}
@@ -90,7 +90,7 @@ func encodeUser(a *HApp, ou User) User {
 
 func decodeUser(a *HApp, ou User) User {
 	var nu User
-	p, e := Decrypt(ou.Pwd, a.Key)
+	p, e := Decrypt(ou.Pwd, a.key)
 	if e != nil {
 		return nu
 	}

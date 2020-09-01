@@ -6,6 +6,7 @@ import (
 )
 
 type HSpace struct {
+	*ElemBase
 }
 
 var HtmlSpace = `<div class="layui-form-item">
@@ -13,7 +14,7 @@ var HtmlSpace = `<div class="layui-form-item">
 </div>`
 
 func NewSpace() *HSpace {
-	return &HSpace{}
+	return &HSpace{&ElemBase{}}
 }
 func (l *HSpace) Type() string {
 	return "space"
@@ -22,7 +23,9 @@ func (l *HSpace) ID() string {
 	return ""
 }
 func (l *HSpace) Clone() HtmlElem {
-	return NewSpace()
+	nl := NewSpace()
+	nl.ElemBase.clone(l.ElemBase)
+	return nl
 }
 func (l *HSpace) Render() string {
 	var buf strings.Builder

@@ -5,13 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"strconv"
 	"time"
-)
-
-var (
-	Token_Expire_Time = 365 * 24 * time.Hour
 )
 
 /**************************************************************************
@@ -20,7 +17,7 @@ var (
 			其他key val分别表示页面控件ID和Val
 **************************************************************************/
 func HandleButtonClick(a *HApp) {
-	a.Handler.HandleFunc("/button_click", func(w http.ResponseWriter, r *http.Request) {
+	a.handler.HandleFunc("/button_click", func(w http.ResponseWriter, r *http.Request) {
 		params := a.ParseHttpParams(r)
 		event_id, ok := params["event_id"]
 		url_router, ok1 := params["url_router"]
@@ -54,7 +51,7 @@ func addMenu(a *HApp, p *PageGroup, m *MenuChild, user string) {
 	m.Target = "_self"
 
 	for _, f := range p.Frames {
-		if a.UserValidCheck(user, f.Router) {
+		if a.userValidCheck(user, f.Router) {
 			m.Child = append(m.Child, MenuChild{nil, f.Router, f.Icon, "_self", f.Title})
 		}
 	}
@@ -65,24 +62,24 @@ func addMenu(a *HApp, p *PageGroup, m *MenuChild, user string) {
 	}
 }
 func HandleMenu(a *HApp) {
-	a.Handler.HandleFunc("/api/init", func(w http.ResponseWriter, r *http.Request) {
+	a.handler.HandleFunc("/api/init", func(w http.ResponseWriter, r *http.Request) {
 		params := a.ParseHttpParams(r)
 		res := &Menu{}
 		user := params["username"]
 
-		if a.Home == nil {
+		if a.home == nil {
 			ret_json, _ := json.Marshal(res)
 			io.WriteString(w, string(ret_json))
 			return
 		}
 
-		res.HomeInfo.Title = a.Title
-		res.HomeInfo.Href = a.Home.Router
-		res.LogoInfo.Title = a.Title
+		res.HomeInfo.Title = a.title
+		res.HomeInfo.Href = a.home.Router
+		res.LogoInfo.Title = a.title
 		res.LogoInfo.Image = "/uilib/images/logo.png"
-		res.LogoInfo.Href = a.Home.Router
+		res.LogoInfo.Href = a.home.Router
 
-		for _, p := range a.Group {
+		for _, p := range a.group {
 			nm := MenuChild{}
 			addMenu(a, p, &nm, user)
 			res.MenuInfo = append(res.MenuInfo, nm)
@@ -93,7 +90,7 @@ func HandleMenu(a *HApp) {
 }
 
 func HandleClear(a *HApp) {
-	a.Handler.HandleFunc("/api/clear", func(w http.ResponseWriter, r *http.Request) {
+	a.handler.HandleFunc("/api/clear", func(w http.ResponseWriter, r *http.Request) {
 		params := a.ParseHttpParams(r)
 		user := params["username"]
 		if user == "" {
@@ -115,7 +112,7 @@ type UserSign struct {
 }
 
 func HandleLogin(a *HApp) {
-	a.Handler.HandleFunc("/api/login", func(w http.ResponseWriter, r *http.Request) {
+	a.handler.HandleFunc("/api/login", func(w http.ResponseWriter, r *http.Request) {
 		res := &ApiRsp{}
 		ret := 0
 		cv := ""
@@ -140,7 +137,7 @@ func HandleLogin(a *HApp) {
 				ret = 5
 				break
 			}
-			cv, e = Encrypt(user.Name+"|"+strconv.FormatInt(time.Now().Unix(), 10), a.Key)
+			cv, e = Encrypt(user.Name+"|"+strconv.FormatInt(time.Now().Unix(), 10), a.key)
 			if e != nil {
 				res.Msg = e.Error()
 				ret = 6
@@ -169,7 +166,7 @@ func HandleLogin(a *HApp) {
 }
 
 func HandleSignUp(a *HApp) {
-	a.Handler.HandleFunc("/api/signup", func(w http.ResponseWriter, r *http.Request) {
+	a.handler.HandleFunc("/api/signup", func(w http.ResponseWriter, r *http.Request) {
 		res := &ApiRsp{}
 		ret := 0
 		cv := ""
@@ -189,12 +186,17 @@ func HandleSignUp(a *HApp) {
 				ret = 7
 				break
 			}
+			if u.Name != Admin_User_Name && !a.openRegiste { //admin可以注册
+				ret = 8
+				res.Msg = "registe close"
+				break
+			}
 			user := GetUser(a, u.Name)
 			if user.Name != "" {
 				ret = 1
 				break
 			}
-			cv, e = Encrypt(u.Name+"|"+strconv.FormatInt(time.Now().Unix(), 10), a.Key)
+			cv, e = Encrypt(u.Name+"|"+strconv.FormatInt(time.Now().Unix(), 10), a.key)
 			if e != nil {
 				res.Msg = e.Error()
 				ret = 6
@@ -227,10 +229,14 @@ func HandleSignUp(a *HApp) {
 type UserChpwd struct {
 	OldP string `json:"old_password"`
 	NewP string `json:"new_password"`
+	AgaP string `json:"again_password"`
 }
 
 func HandleChpwd(a *HApp) {
-	a.Handler.HandleFunc("/api/chpwd", func(w http.ResponseWriter, r *http.Request) {
+	a.handler.HandleFunc("/api/chpwd", func(w http.ResponseWriter, r *http.Request) {
+		body, _ := ioutil.ReadAll(r.Body)
+		r.Body.Close()
+
 		params := a.ParseHttpParams(r)
 		name := params["username"]
 		user := GetUser(a, name)
@@ -244,21 +250,16 @@ func HandleChpwd(a *HApp) {
 		u := UserChpwd{}
 		for {
 			if r.Body == nil {
+				ret = 1
+				break
+			}
+			json.Unmarshal(body, &u)
+			if u.OldP != user.Pwd {
 				ret = 2
 				break
 			}
-			e := json.NewDecoder(r.Body).Decode(&u)
-			if e != nil {
-				res.Msg = e.Error()
-				ret = 3
-				break
-			}
-			if u.OldP != user.Pwd {
-				ret = 5
-				break
-			}
 			if u.NewP == "" {
-				ret = 6
+				ret = 3
 				break
 			}
 			break
@@ -282,12 +283,12 @@ func HandleChpwd(a *HApp) {
 type TableResponse struct {
 	Code  int64         `json:"code"`
 	Count int64         `json:"count"`
-	Data  []interface{} `json:"data"`
+	data  []interface{} `json:"data"`
 	Msg   string        `json:"msg"`
 }
 
 func HandleTable(a *HApp) {
-	a.Handler.HandleFunc("/api/table", func(w http.ResponseWriter, r *http.Request) {
+	a.handler.HandleFunc("/api/table", func(w http.ResponseWriter, r *http.Request) {
 		params := a.ParseHttpParams(r)
 		user := params["username"]
 		event_id := params["event_id"]
@@ -379,7 +380,7 @@ func HandleTable(a *HApp) {
 }
 
 func HandleMergelay(a *HApp) {
-	a.Handler.HandleFunc("/api/mergely", func(w http.ResponseWriter, r *http.Request) {
+	a.handler.HandleFunc("/api/mergely", func(w http.ResponseWriter, r *http.Request) {
 		params := a.ParseHttpParams(r)
 		user := params["username"]
 		file := params["file"]

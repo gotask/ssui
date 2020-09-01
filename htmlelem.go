@@ -12,6 +12,8 @@ type HtmlElem interface {
 	Type() string
 	Clone() HtmlElem
 	Render() string
+	Route() string
+	SetRouter(r string)
 }
 
 type ElemBase struct {
@@ -19,13 +21,14 @@ type ElemBase struct {
 	Typ     string
 	Html    string
 	Align   string
+	Rout    string
 	Hide    bool
 	Disable bool
 	self    interface{}
 }
 
 func newElem(id, typ, html string) *ElemBase {
-	return &ElemBase{id, typ, html, "center", false, false, nil}
+	return &ElemBase{id, typ, html, "center", "", false, false, nil}
 }
 
 func (e *ElemBase) ID() string {
@@ -33,6 +36,12 @@ func (e *ElemBase) ID() string {
 }
 func (e *ElemBase) Type() string {
 	return e.Typ
+}
+func (e *ElemBase) Route() string {
+	return e.Rout
+}
+func (e *ElemBase) SetRouter(r string) {
+	e.Rout = r
 }
 func (e *ElemBase) clone(oe *ElemBase) {
 	e.Align = oe.Align

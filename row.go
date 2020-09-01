@@ -6,11 +6,12 @@ import (
 )
 
 type Row struct {
+	*ElemBase
 	Elems []HtmlElem
 }
 
 func NewRow() *Row {
-	return &Row{make([]HtmlElem, 0)}
+	return &Row{&ElemBase{}, make([]HtmlElem, 0)}
 }
 func (l *Row) AddElem(e HtmlElem) *Row {
 	l.Elems = append(l.Elems, e)
@@ -27,7 +28,14 @@ func (l *Row) Clone() HtmlElem {
 	for _, r := range l.Elems {
 		nl.AddElem(r.Clone())
 	}
+	nl.ElemBase.clone(l.ElemBase)
 	return nl
+}
+func (l *Row) SetRouter(r string) {
+	l.ElemBase.SetRouter(r)
+	for _, v := range l.Elems {
+		v.SetRouter(r)
+	}
 }
 func (l *Row) Render() string {
 	var buff strings.Builder

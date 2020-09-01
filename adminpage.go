@@ -2,7 +2,7 @@
 package ssui
 
 func UserSetting(a *HApp) {
-	if !a.Admin {
+	if !a.admin {
 		return
 	}
 	frameUserSetting := NewFrame("/usersetting", "UserSetting", "layui-icon layui-icon-username", func(user string) {
@@ -27,7 +27,7 @@ func UserSetting(a *HApp) {
 }
 
 func AuthEdit(a *HApp) {
-	if !a.Admin {
+	if !a.admin {
 		return
 	}
 	authFrame := NewFrame("/authedit", "Auth", "layui-icon layui-icon-set-fill", nil)
@@ -65,7 +65,12 @@ func AuthEdit(a *HApp) {
 			u.Remark = cols[3]
 			AddUser(a, u)
 		} else if t == TODel {
-			return ApiRsp{1, "不可删除"}
+			u := GetUser(a, cols[0])
+			if u.Name != "" {
+				u.Pwd = "12345"
+				AddUser(a, u)
+			}
+			return ApiRsp{0, "密码已重置"}
 		}
 		return ApiRsp{0, ""}
 	}))
