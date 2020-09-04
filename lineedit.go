@@ -22,3 +22,6 @@ func (l *HLineEdit) Clone() HtmlElem {
 	nl.ElemBase.clone(l.ElemBase)
 	return nl
 }
+func (l *HLineEdit) SetValue(v string) {
+	l.Text = v
+}

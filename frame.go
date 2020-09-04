@@ -64,6 +64,9 @@ func (f *Frame) Route() string {
 func (f *Frame) SetRouter(r string) {
 	f.Router = r
 }
+func (f *Frame) SetValue(v string) {
+	f.Title = v
+}
 func (f *Frame) Clone() HtmlElem {
 	nf := NewFrame(f.Router, f.Title, f.Icon, f.OnLoad)
 	for _, r := range f.Elems {

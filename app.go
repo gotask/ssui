@@ -207,6 +207,19 @@ func (a *HApp) GetElem(user, router, id string) HtmlElem {
 	}
 	return nil
 }
+func (a *HApp) GetElemWithVal(router, id string, param map[string]string) HtmlElem {
+	user := param["username"]
+	f := a.GetFrame(user, router)
+	if f != nil {
+		if e, o := f.Events[id]; o {
+			if v, ok := param[id]; ok {
+				e.SetValue(v)
+			}
+			return e
+		}
+	}
+	return nil
+}
 
 func (a *HApp) addGroup(p *PageGroup) {
 	for _, f := range p.Frames {

@@ -35,3 +35,10 @@ func (c *HCheckBox) Clone() HtmlElem {
 	nc.ElemBase.clone(c.ElemBase)
 	return nc
 }
+func (c *HCheckBox) SetValue(v string) {
+	if v == "1" {
+		c.Checked = true
+	} else if v == "0" {
+		c.Checked = false
+	}
+}

@@ -1,6 +1,10 @@
 // select.go
 package ssui
 
+import (
+	"strconv"
+)
+
 type HSelect struct {
 	*ElemBase
 	SelIndex int
@@ -35,4 +39,19 @@ func (s *HSelect) Clone() HtmlElem {
 	ns := NewSelect(s.Id, s.SelIndex, s.Option)
 	ns.ElemBase.clone(s.ElemBase)
 	return ns
+}
+func (s *HSelect) Text() string {
+	if s.SelIndex < len(s.Option) {
+		return s.Option[s.SelIndex]
+	}
+	return ""
+}
+func (s *HSelect) SetValue(v string) {
+	i, e := strconv.Atoi(v)
+	if e != nil {
+		return
+	}
+	if i < len(s.Option) {
+		s.SelIndex = i
+	}
 }

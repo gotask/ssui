@@ -1,6 +1,11 @@
 // timepicker.go
 package ssui
 
+import (
+	"strings"
+	"time"
+)
+
 type HTimePicker struct {
 	*ElemBase
 	//y代表年M代表月,以此类推,例如: yyyy-MM-dd HH:mm:ss yyyy年M月 yyyy年的M月某天晚上，大概H点 dd/MM/yyyy ...
@@ -13,6 +18,7 @@ type HTimePicker struct {
 	*/
 	DisplayType string //默认datetime
 	Value       int64  //默认显示时间 1970年以来的ms数
+	Text        string
 }
 
 var HtmlTimePicker = `<div class="layui-form-item">
@@ -43,7 +49,7 @@ func NewTimePicker(id, format, displaytype string, val int64) *HTimePicker {
 	if displaytype == "" {
 		displaytype = "datetime"
 	}
-	p := &HTimePicker{newElem(id, "timepicker", HtmlTimePicker), format, displaytype, val}
+	p := &HTimePicker{newElem(id, "timepicker", HtmlTimePicker), format, displaytype, val, ""}
 	p.self = p
 	return p
 }
@@ -51,4 +57,20 @@ func (p *HTimePicker) Clone() HtmlElem {
 	np := NewTimePicker(p.Id, p.Format, p.DisplayType, p.Value)
 	np.ElemBase.clone(p.ElemBase)
 	return np
+}
+func (p *HTimePicker) SetValue(v string) {
+	p.Text = v
+
+	f := p.Format
+	f = strings.Replace(f, "yyyy", "2006", -1)
+	f = strings.Replace(f, "MM", "01", -1)
+	f = strings.Replace(f, "dd", "02", -1)
+	f = strings.Replace(f, "HH", "15", -1)
+	f = strings.Replace(f, "mm", "04", -1)
+	f = strings.Replace(f, "ss", "05", -1)
+	t, e := time.Parse(f, v)
+	if e != nil {
+		return
+	}
+	p.Value = t.Unix() * 1000
 }

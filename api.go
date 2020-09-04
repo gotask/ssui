@@ -80,6 +80,9 @@ func HandleMenu(a *HApp) {
 		res.LogoInfo.Href = a.home.Router
 
 		for _, p := range a.group {
+			if p.Title == "AuthEdit" && user != Admin_User_Name {
+				continue
+			}
 			nm := MenuChild{}
 			addMenu(a, p, &nm, user)
 			res.MenuInfo = append(res.MenuInfo, nm)

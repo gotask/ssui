@@ -21,3 +21,6 @@ func (t *HTextArea) Clone() HtmlElem {
 	nt.ElemBase.clone(t.ElemBase)
 	return nt
 }
+func (t *HTextArea) SetValue(v string) {
+	t.Text = v
+}
