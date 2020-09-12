@@ -401,3 +401,58 @@ func HandleMergelay(a *HApp) {
 		}
 	})
 }
+
+func HandleUpload(a *HApp) {
+	a.handler.HandleFunc("/api/upload", func(w http.ResponseWriter, r *http.Request) {
+		res := &ApiRsp{0, ""}
+		defer func() {
+			ret_json, _ := json.Marshal(res)
+			io.WriteString(w, string(ret_json))
+		}()
+
+		params := a.ParseHttpParams(r)
+		user := params["username"]
+		event_id := params["event_id"]
+		url_router := params["url_router"]
+		up := a.GetElem(user, url_router, event_id)
+		if up == nil {
+			res.Code = 1
+			res.Msg = "no upload item"
+			return
+		}
+		u1 := up.(*HUpload)
+		var fileName string
+		var fileData []byte
+
+		reader, err := r.MultipartReader()
+		if err != nil {
+			res.Code = 2
+			res.Msg = err.Error()
+			return
+		}
+
+		for {
+			part, err := reader.NextPart()
+			if err == io.EOF {
+				break
+			}
+			if err != nil {
+				res.Code = 3
+				res.Msg = err.Error()
+				return
+			}
+			if part.FileName() == "" { // this is FormData
+				//data, _ := ioutil.ReadAll(part)
+				//fmt.Printf("FormData=[%s]\n", string(data))
+			} else { // This is FileData
+				fileName = part.FileName()
+				data, _ := ioutil.ReadAll(part)
+				fileData = append(fileData, data...)
+			}
+		}
+
+		if u1.OnUpload != nil {
+			u1.OnUpload(fileName, fileData)
+		}
+	})
+}
