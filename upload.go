@@ -15,11 +15,9 @@ var HtmlUpload = `<div class="layui-upload">
 	     var $ = layui.jquery,
 	         upload = layui.upload;
 
-		var url = "/api/upload?event_id={{.Id}}&url_router="+getRouter();
-
 		upload.render({
 			elem: '#{{.Id}}'
-			,url: url
+			,url: '/api/upload?event_id={{.Id}}&url_router={{.Rout}}'
 			,accept: 'file' //普通文件
 			//,exts: 'zip|rar|7z' //只允许上传压缩文件
 			,choose: function(obj){

@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-var HtmlMergely = `<!DOCTYPE html>
+var HtmlMergelyRaw = `<!DOCTYPE html>
 <html>
 <head>
   <meta http-equiv="content-type" content="text/html; charset=UTF-8">
@@ -69,7 +69,7 @@ var HtmlMergely = `<!DOCTYPE html>
 
     <div class="diffs">
         <header>
-            <h1>Visualized Diffs</h1>
+            <h3>Diffs</h3>
             <button id="prev" title="Previous diff">▲</button>
             <button id="next" title="Next diff">▼</button>
             <button id="wrap" title="Toggle line wrapping">
@@ -136,15 +136,29 @@ $('#wrap').click(function() { changeOptions(function(x) { x.wrap_lines = !x.wrap
 type OnGetFile func(user, file string) string
 
 type HMergely struct {
-	F OnGetFile
+	*ElemBase
+	LeftFile  string
+	RightFile string
+	F         OnGetFile
 }
 
-func (m *HMergely) Page(leftFileName, r string) string {
-	s := strings.ReplaceAll(HtmlMergely, "FILE_LEFT", leftFileName)
+func MergelyPage(leftFileName, r string) string {
+	s := strings.ReplaceAll(HtmlMergelyRaw, "FILE_LEFT", leftFileName)
 	s = strings.ReplaceAll(s, "FILE_RIGHT", r)
 	return s
 }
 
-var (
-	mergely = &HMergely{}
-)
+var HtmlMergely = `<iframe src="/mergely?fl={{.LeftFile}}&fr={{.RightFile}}&event_id={{.Id}}&url_router={{.Rout}}" id="{{.Id}}" value="{{.LeftFile}}|{{.RightFile}}" width="100%" height="700" frameborder="0" scrolling="auto">
+</iframe>`
+
+func NewMergely(id, lf, rf string, onf OnGetFile) *HMergely {
+	m := &HMergely{newElem(id, "mergely", HtmlMergely), lf, rf, onf}
+	m.self = m
+	return m
+}
+
+func (m *HMergely) Clone() HtmlElem {
+	nm := NewMergely(m.Id, m.LeftFile, m.RightFile, m.F)
+	nm.ElemBase.clone(m.ElemBase)
+	return nm
+}

@@ -386,18 +386,29 @@ func HandleMergelay(a *HApp) {
 	a.handler.HandleFunc("/api/mergely", func(w http.ResponseWriter, r *http.Request) {
 		params := a.ParseHttpParams(r)
 		user := params["username"]
+		event_id := params["event_id"]
+		url_router := params["url_router"]
 		file := params["file"]
 
 		res := &ApiRsp{}
-		if mergely.F == nil {
+		defer func() {
+			ret_json, _ := json.Marshal(res)
+			io.WriteString(w, string(ret_json))
+		}()
+
+		h := a.GetElem(user, url_router, event_id)
+		if h == nil {
 			res.Code = 1
-			res.Msg = "you should call SetMegelyFileFunc: " + file
-			ret_json, _ := json.Marshal(res)
-			io.WriteString(w, string(ret_json))
+			res.Msg = "no mergely item id=" + event_id
+			return
+		}
+		mer := h.(*HMergely)
+
+		if mer.F == nil {
+			res.Code = 1
+			res.Msg = "you should overload HMergely.OnGetFile"
 		} else {
-			res.Msg = mergely.F(user, file)
-			ret_json, _ := json.Marshal(res)
-			io.WriteString(w, string(ret_json))
+			res.Msg = mer.F(user, file)
 		}
 	})
 }

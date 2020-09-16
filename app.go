@@ -93,11 +93,6 @@ func (a *HApp) OpenRegiste(r bool) {
 	a.openRegiste = r
 }
 
-// 通过 /mergely?fl=1&fr=2 可以导航到文本比较页面
-func (a *HApp) SetMegelyFileFunc(f OnGetFile) {
-	mergely.F = f
-}
-
 //权限管理
 func (a *HApp) SetAuthCheck(f UserAuthCheck) {
 	a.authCheck = f
@@ -250,12 +245,9 @@ func (a *HApp) Run() error {
 	}))
 
 	h.Handle("/mergely", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		r.ParseForm()
-		params := make(map[string]string, 0)
-		for k, v := range r.Form {
-			params[k] = v[0]
-		}
-		w.Write([]byte(mergely.Page(params["fl"], params["fr"])))
+		params := a.ParseHttpParams(r)
+		extend := "&event_id=" + params["event_id"] + "&url_router=" + params["url_router"]
+		w.Write([]byte(MergelyPage(params["fl"]+extend, params["fr"]+extend)))
 	}))
 
 	for r, _ := range a.global.Frames {
