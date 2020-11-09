@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -35,7 +36,7 @@ func HandleButtonClick(a *HApp) {
 			if b.Event == nil {
 				break
 			}
-			res = b.Event(params)
+			res = b.Event(user, params)
 			break
 		}
 
@@ -376,6 +377,15 @@ func HandleTable(a *HApp) {
 			} else {
 				io.WriteString(w, Html404)
 			}
+		} else if strings.HasPrefix(oper, "user_") {
+			res := &HResponse{Error: "error param"}
+			ev, e := strconv.Atoi(oper[5:])
+			if e == nil && tb.funcUsrEvent != nil {
+				res = tb.funcUsrEvent(user, ev, TableAddCols(params))
+			}
+
+			ret_json, _ := json.Marshal(res)
+			io.WriteString(w, string(ret_json))
 		} else {
 			io.WriteString(w, `{"code":1,"msg":"error params","count":0,"data":[]}`)
 		}
@@ -415,7 +425,7 @@ func HandleMergelay(a *HApp) {
 
 func HandleUpload(a *HApp) {
 	a.handler.HandleFunc("/api/upload", func(w http.ResponseWriter, r *http.Request) {
-		res := &ApiRsp{0, ""}
+		res := &HResponse{}
 		defer func() {
 			ret_json, _ := json.Marshal(res)
 			io.WriteString(w, string(ret_json))
@@ -425,10 +435,10 @@ func HandleUpload(a *HApp) {
 		user := params["username"]
 		event_id := params["event_id"]
 		url_router := params["url_router"]
+		res.RedirectUrl = url_router
 		up := a.GetElem(user, url_router, event_id)
 		if up == nil {
-			res.Code = 1
-			res.Msg = "no upload item"
+			res.Error = "no upload item"
 			return
 		}
 		u1 := up.(*HUpload)
@@ -437,8 +447,7 @@ func HandleUpload(a *HApp) {
 
 		reader, err := r.MultipartReader()
 		if err != nil {
-			res.Code = 2
-			res.Msg = err.Error()
+			res.Error = err.Error()
 			return
 		}
 
@@ -448,8 +457,7 @@ func HandleUpload(a *HApp) {
 				break
 			}
 			if err != nil {
-				res.Code = 3
-				res.Msg = err.Error()
+				res.Error = err.Error()
 				return
 			}
 			if part.FileName() == "" { // this is FormData
@@ -463,7 +471,7 @@ func HandleUpload(a *HApp) {
 		}
 
 		if u1.OnUpload != nil {
-			u1.OnUpload(fileName, fileData)
+			u1.OnUpload(user, params, fileName, fileData)
 		}
 	})
 }

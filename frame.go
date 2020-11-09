@@ -84,7 +84,7 @@ func (f *Frame) buildParams() string {
 			continue
 		}
 		param += "+\"&"
-		param += s.ID() + "=\"+" + "$(\"#" + s.ID() + "\").val()"
+		param += s.ID() + "=\"+" + "$(\"#" + s.ID() + `").val().replace(/\\/g, "\\\\").replace(/\r/g, "\\r").replace(/\n/g, "\\n").replace(/&/g, "\\0")`
 	}
 	param += ";\n}\n"
 	return param + f.buildFunc()

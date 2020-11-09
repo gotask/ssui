@@ -26,6 +26,8 @@ type OnTableGetData func(user string, page, limit int, searchtxt string) (total 
 type OnTableEvent func(user string, t TableOperType, cols []string) ApiRsp
 type OnTableUrl func(user, href string) string
 
+type OnTableUsrEvent func(user string, event int, cols []string) *HResponse
+
 type HTable struct {
 	*ElemBase
 	Header  []string
@@ -40,12 +42,16 @@ type HTable struct {
 
 	data [][]string
 	key  []int //primary key,default colum 0
+
+	UserDefine   bool
+	UserBtName   []string
+	funcUsrEvent OnTableUsrEvent
 }
 
 func NewStaticTable(id string, header []string, data [][]string) *HTable {
 	h := make([]string, len(header), len(header))
 	copy(h, header)
-	t := &HTable{newElem(id, "table", HtmlTable), h, make([]int, len(header), len(header)), false, false, true, nil, nil, nil, nil, []int{0}}
+	t := &HTable{newElem(id, "table", HtmlTable), h, make([]int, len(header), len(header)), false, false, true, nil, nil, nil, nil, []int{0}, false, nil, nil}
 	t.self = t
 	t.data = data
 	return t
@@ -54,7 +60,7 @@ func NewStaticTable(id string, header []string, data [][]string) *HTable {
 func NewTable(id string, header []string, gd OnTableGetData) *HTable {
 	h := make([]string, len(header), len(header))
 	copy(h, header)
-	t := &HTable{newElem(id, "table", HtmlTable), h, make([]int, len(header), len(header)), false, false, true, gd, nil, nil, nil, []int{0}}
+	t := &HTable{newElem(id, "table", HtmlTable), h, make([]int, len(header), len(header)), false, false, true, gd, nil, nil, nil, []int{0}, false, nil, nil}
 	t.self = t
 	return t
 }
@@ -64,6 +70,16 @@ func NewToolTable(id string, search bool, header []string, gd OnTableGetData, ev
 	t.Tool = true
 	t.Search = search
 	t.funcEvent = event
+	return t
+}
+
+func NewUserDefineTable(id string, search bool, header, usrBtName []string, gd OnTableGetData, event OnTableUsrEvent) *HTable {
+	t := NewTable(id, header, gd)
+	t.Tool = true
+	t.Search = search
+	t.funcUsrEvent = event
+	t.UserDefine = true
+	t.UserBtName = usrBtName
 	return t
 }
 
@@ -185,11 +201,19 @@ var HtmlTable = `
   </div>
 </script>
 
+{{if .UserDefine}}
+<script type="text/html" id="{{.Id}}_toolbar">
+  {{range $i,$v:=.UserBtName}}
+  <a class="layui-btn layui-btn-primary layui-btn-xs" lay-event="user_{{$i}}">{{$v}}</a>
+  {{end}}
+</script>
+{{else}}
 <script type="text/html" id="{{.Id}}_toolbar">
   <a class="layui-btn layui-btn-primary layui-btn-xs" lay-event="detail">查看</a>
   <a class="layui-btn layui-btn-xs" lay-event="edit">编辑</a>
   <a class="layui-btn layui-btn-danger layui-btn-xs" lay-event="del">删除</a>
 </script>
+{{end}}
 
 <table class="layui-hide" id="{{.Id}}" lay-filter="{{.Id}}"></table>
 
@@ -200,7 +224,9 @@ var HtmlTable = `
 		var table = layui.table;
 		var url = "/api/table?event_id={{.Id}}&oper="+op{{range $k,$v:=.Header}}+"&{{$k}}="+$("#{{$TId}}_col{{$k}}").val(){{end}};
 		url = url+"&url_router="+getRouter();
+		var loading = layer.load(0, {shade: [0.1,'#fff'], time: 100 * 1000});
 		$.get(url,function(res){
+			layer.close(loading);
 			var r = JSON.parse(res);
 			ret = r.code;
             if(ret == 0){
@@ -223,7 +249,7 @@ var HtmlTable = `
 			    elem: '#{{.Id}}'
 			    ,url: url
 				{{if .Tool}},toolbar:'#{{.Id}}_toolbarHeader'{{end}}
-				{{if .Tool}},defaultToolbar: [{title: '新加',layEvent: 'LAYTABLE_ADD',icon: 'layui-icon-addition'},'filter', 'exports', 'print']{{end}}
+				{{if .Tool}},defaultToolbar: [{{if not .UserDefine}}{title: '新加',layEvent: 'LAYTABLE_ADD',icon: 'layui-icon-addition'},{{end}}'filter', 'exports', 'print']{{end}}
 				{{if .Page}},page:true{{end}}
 				,limit: 50
 				,limits:[30,50,100,500,1000,10000]
@@ -294,7 +320,9 @@ var HtmlTable = `
 				});
 		    } else if(obj.event === 'del'){
 		      layer.confirm('确认删除', function(index){
+				var loading = layer.load(0, {shade: [0.1,'#fff'], time: 100 * 1000});
 				$.get("/api/table?event_id={{.Id}}&oper=del"{{range $i,$v:=.Header}}+"&{{$i}}="+data[{{$i}}]{{end}}+"&url_router="+getRouter(),function(res){
+					layer.close(loading);
 					var r = JSON.parse(res);
 					ret = r.code;
 	                if(ret == 0){
@@ -321,7 +349,18 @@ var HtmlTable = `
 					  	content: html
 					});	
 				});
-		    }else{
+		    }else if(obj.event.indexOf("user_")==0){
+				  var loading = layer.load(0, {shade: [0.1,'#fff'], time: 100 * 1000});
+				  $.get("/api/table?event_id={{.Id}}&oper="+obj.event{{range $i,$v:=.Header}}+"&{{$i}}="+data[{{$i}}]{{end}}+"&url_router="+getRouter(),function(res){
+						layer.close(loading);
+						var obj = JSON.parse(res);
+						if(obj.RedirectUrl==getRouter()){
+							table.reload('{{.Id}}');
+						}else{
+							handleRsp(res);
+						}
+				  });
+			  }else{
 					var event=obj.event;
 					if(event.indexOf("img_")==0)
 					{

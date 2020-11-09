@@ -1,7 +1,7 @@
 // button.go
 package ssui
 
-type OnButtonClick func(param map[string]string) *HResponse
+type OnButtonClick func(username string, param map[string]string) *HResponse
 
 type HButton struct {
 	*ElemBase

@@ -12,16 +12,15 @@ func UserSetting(a *HApp) {
 	})
 	frameUserSetting.AddElem(NewRow().AddElem(NewLabel("手机号")).AddElem(NewLineEdit("phone", "", "", false)))
 	frameUserSetting.AddElem(NewLabel("备注")).AddElem(NewTextArea("remark", "", ""))
-	frameUserSetting.AddElem(NewButton("save", "保存", func(params map[string]string) *HResponse {
-		user := params["username"]
+	frameUserSetting.AddElem(NewButton("save", "保存", func(user string, params map[string]string) *HResponse {
 		u := GetUser(a, user)
 		if u.Name != "" {
 			u.Phone = params["phone"]
 			u.Remark = params["remark"]
 			AddUser(a, u)
-			return &HResponse{"保存成功", "", "", false}
+			return ResponseError("保存成功")
 		}
-		return &HResponse{"保存失败", "", "", false}
+		return ResponseError("保存失败")
 	}))
 	a.AddFrame(frameUserSetting)
 }

@@ -6,9 +6,9 @@ type HUpload struct {
 	OnUpload UploadFile
 }
 
-type UploadFile func(name string, data []byte)
+type UploadFile func(username string, param map[string]string, filename string, data []byte)
 
-var HtmlUpload = `<div class="layui-upload">
+var HtmlUpload = `<div class="layui-upload layui-form-item">
 <button type="button" class="layui-btn" id="{{.Id}}"><i class="layui-icon"></i>{{.Text}}</button>
 <script>
 	layui.use(['upload'], function () {
@@ -30,12 +30,7 @@ var HtmlUpload = `<div class="layui-upload">
 				$("#{{.Id}}").text("正在上传..."+percent);
 			}
 			,done: function(res){
-				console.log(res);
-				if(res.code==0){
-					$("#{{.Id}}").text("上传成功");
-				}else{
-					$("#{{.Id}}").text("上传失败");
-				}
+				handleRsp(res);
 			}
 			,error: function(index, upload){
 				$("#{{.Id}}").text("上传失败");

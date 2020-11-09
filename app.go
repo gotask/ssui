@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	Admin_User_Name   = "adminxyz"
+	Admin_User_Name   = "adminxyz"           //超级管理员账户，要自己先注册
 	Token_Expire_Time = 365 * 24 * time.Hour //默认一年
 )
 
@@ -144,7 +144,7 @@ func (a *HApp) ParseHttpParams(r *http.Request) map[string]string {
 	r.ParseForm()
 	params := make(map[string]string, 0)
 	for k, v := range r.Form {
-		params[k] = v[0]
+		params[k] = string(UnEscape(v[0]))
 	}
 
 	c, e := r.Cookie("token")

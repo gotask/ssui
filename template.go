@@ -74,7 +74,12 @@ function buttonClick(e){
 function handleRsp(ret){
 	var $ = layui.jquery;
 	var layer = layui.layer;
-	var obj = JSON.parse(ret);
+	var obj = new Object;
+	if(typeof(ret)=='string'){
+		obj = JSON.parse(ret);
+	}else{
+		obj = ret;
+	}
 	var miniPage = layui.miniPage;
  	console.log(obj);
 
@@ -100,6 +105,13 @@ function handleRsp(ret){
 		}else{
 			redirectUrl(obj.RedirectUrl);
 		}
+	}else if(!isEmpty(obj.ShowHtml)){
+		layer.open({
+			type: 1,
+			title: obj.ShowInDialog,
+			area: ['50%', '70%'], //宽高
+			content: obj.ShowHtml
+	  });
 	}
 }
 

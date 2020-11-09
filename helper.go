@@ -5,6 +5,39 @@ import (
 	"strconv"
 )
 
+func UnEscape(v string) []byte {
+	pos := 0
+	buf := make([]byte, len(v)*2)
+
+	for i := 0; i < len(v); i++ {
+		c := v[i]
+		if c == '\\' {
+			i++
+			if i < len(v) {
+				if v[i] == '\\' {
+					buf[pos] = '\\'
+				} else if v[i] == 'r' {
+					buf[pos] = '\r'
+				} else if v[i] == 'n' {
+					buf[pos] = '\n'
+				} else if v[i] == '0' {
+					buf[pos] = '&'
+				} else {
+					buf[pos] = c
+					pos++
+					buf[pos] = v[i]
+				}
+			} else {
+				buf[pos] = c
+			}
+		} else {
+			buf[pos] = c
+		}
+		pos++
+	}
+	return buf[:pos]
+}
+
 func Value(id string, param map[string]string) string {
 	if v, ok := param[id]; ok {
 		return v
