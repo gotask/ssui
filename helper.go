@@ -22,6 +22,8 @@ func UnEscape(v string) []byte {
 					buf[pos] = '\n'
 				} else if v[i] == '0' {
 					buf[pos] = '&'
+				} else if v[i] == '1' {
+					buf[pos] = '%'
 				} else {
 					buf[pos] = c
 					pos++

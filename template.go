@@ -62,10 +62,10 @@ function isEmpty(obj){
 }
 
 function buttonClick(e){
-	var url = "/button_click?event_id="+e+"&"+getAllElemVal();
+	var url = "/button_click?event_id="+e;
 	var $ = layui.jquery;
 	var loading = layer.load(0, {shade: [0.1,'#fff'], time: 100 * 1000});
-	$.get(url,function(ret){
+	$.post(url,getAllElemVal(),function(ret){
 		layer.close(loading);
 		handleRsp(ret);
     });

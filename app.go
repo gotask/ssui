@@ -144,7 +144,7 @@ func (a *HApp) ParseHttpParams(r *http.Request) map[string]string {
 	r.ParseForm()
 	params := make(map[string]string, 0)
 	for k, v := range r.Form {
-		params[k] = string(UnEscape(v[0]))
+		params[k] = string(v[0])
 	}
 
 	c, e := r.Cookie("token")

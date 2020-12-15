@@ -19,7 +19,7 @@ var (
 	TCNormal TableColumnType = 0
 	TCImg    TableColumnType = 1
 	TCUrl    TableColumnType = 2
-	TSort    TableColumnType = 3
+	Template TableColumnType = 3
 )
 
 type OnTableGetData func(user string, page, limit int, searchtxt string) (total int, data [][]string)
@@ -46,12 +46,15 @@ type HTable struct {
 	UserDefine   bool
 	UserBtName   []string
 	funcUsrEvent OnTableUsrEvent
+
+	ColSort     []int
+	ColTemplate []string
 }
 
 func NewStaticTable(id string, header []string, data [][]string) *HTable {
 	h := make([]string, len(header), len(header))
 	copy(h, header)
-	t := &HTable{newElem(id, "table", HtmlTable), h, make([]int, len(header), len(header)), false, false, true, nil, nil, nil, nil, []int{0}, false, nil, nil}
+	t := &HTable{newElem(id, "table", HtmlTable), h, make([]int, len(header), len(header)), false, false, true, nil, nil, nil, nil, []int{0}, false, nil, nil, make([]int, len(header), len(header)), make([]string, len(header), len(header))}
 	t.self = t
 	t.data = data
 	return t
@@ -60,7 +63,7 @@ func NewStaticTable(id string, header []string, data [][]string) *HTable {
 func NewTable(id string, header []string, gd OnTableGetData) *HTable {
 	h := make([]string, len(header), len(header))
 	copy(h, header)
-	t := &HTable{newElem(id, "table", HtmlTable), h, make([]int, len(header), len(header)), false, false, true, gd, nil, nil, nil, []int{0}, false, nil, nil}
+	t := &HTable{newElem(id, "table", HtmlTable), h, make([]int, len(header), len(header)), false, false, true, gd, nil, nil, nil, []int{0}, false, nil, nil, make([]int, len(header), len(header)), make([]string, len(header), len(header))}
 	t.self = t
 	return t
 }
@@ -100,6 +103,19 @@ func (table *HTable) SetTool(b bool) {
 }
 func (table *HTable) SetKey(key []int) {
 	table.key = key
+}
+func (table *HTable) SetColumnSort(index int, s bool) {
+	i := 0
+	if s {
+		i = 1
+	}
+	table.ColSort[index] = i
+}
+
+//SetColumnTemplate(1, `function(d){if(d.col1>0) return '<span style="display: block;background-color: #FF0000; color: #fff;>'+ d.col1 +'</span>'; else return d.col1;}`)
+//第二列如果值大于0则设置颜色
+func (table *HTable) SetColumnTemplate(index int, function string) {
+	table.ColTemplate[index] = function
 }
 
 func (table *HTable) TableGetData(user string, page, limit int, searchtxt string) (total int, data [][]string) {
@@ -204,7 +220,7 @@ var HtmlTable = `
 {{if .UserDefine}}
 <script type="text/html" id="{{.Id}}_toolbar">
   {{range $i,$v:=.UserBtName}}
-  <a class="layui-btn layui-btn-primary layui-btn-xs" lay-event="user_{{$i}}">{{$v}}</a>
+  <a class="layui-btn layui-btn-xs" lay-event="user_{{$i}}">{{$v}}</a>
   {{end}}
 </script>
 {{else}}
@@ -222,10 +238,14 @@ var HtmlTable = `
 	function {{RawString .Id}}_edit(op) {
 		var $ = layui.jquery;
 		var table = layui.table;
-		var url = "/api/table?event_id={{.Id}}&oper="+op{{range $k,$v:=.Header}}+"&{{$k}}="+$("#{{$TId}}_col{{$k}}").val(){{end}};
+		//var url = "/api/table?event_id={{.Id}}&oper="+op{{range $k,$v:=.Header}}+"&{{$k}}="+$("#{{$TId}}_col{{$k}}").val(){{end}};
+		var url = "/api/table?event_id={{.Id}}";
+		var data={oper:op};
+		{{range $k,$v:=.Header}}data["{{$k}}"]=$("#{{$TId}}_col{{$k}}").val();
+		{{end}}
 		url = url+"&url_router="+getRouter();
 		var loading = layer.load(0, {shade: [0.1,'#fff'], time: 100 * 1000});
-		$.get(url,function(res){
+		$.post(url,data,function(res){
 			layer.close(loading);
 			var r = JSON.parse(res);
 			ret = r.code;
@@ -247,7 +267,9 @@ var HtmlTable = `
 			var url="/api/table?event_id={{.Id}}&oper=data&url_router="+getRouter();
 			table.render({
 			    elem: '#{{.Id}}'
-			    ,url: url
+				,url: url
+				,skin: 'row'
+				,even: true
 				{{if .Tool}},toolbar:'#{{.Id}}_toolbarHeader'{{end}}
 				{{if .Tool}},defaultToolbar: [{{if not .UserDefine}}{title: '新加',layEvent: 'LAYTABLE_ADD',icon: 'layui-icon-addition'},{{end}}'filter', 'exports', 'print']{{end}}
 				{{if .Page}},page:true{{end}}
@@ -255,10 +277,12 @@ var HtmlTable = `
 				,limits:[30,50,100,500,1000,10000]
 				,id:'{{.Id}}'
 			    ,cols: [[
-	{{range $i,$v:=.Header}} {{if gt $i 0}},{{end}} {field:'col{{$i}}', title: '{{$v}}',align: 'center', {{$ty:=IntSliceElem $.ColType $i}}
-		{{if eq $ty 3}}sort: true,{{end}}
+	{{range $i,$v:=.Header}} {{if gt $i 0}},{{end}} {field:'col{{$i}}', title: '{{$v}}',align: 'center',
+		{{$ty:=IntSliceElem $.ColType $i}}{{$ts:=IntSliceElem $.ColSort $i}}{{$tt:=StringSliceElem $.ColTemplate $i}}
+		{{if eq $ts 1}} sort: true, {{else}} sort: false, {{end}}
 		{{if eq $ty 1}} event: 'img_col{{$i}}', templet: function(d){return '<a href="javascript:;"><img src='+d.col{{RawInt $i}}+'></a>'} {{end}}
-		{{if eq $ty 2}} event: 'url_col{{$i}}', templet: function(d){return '<a class="layui-table-link" href="javascript:;">'+d.col{{RawInt $i}}+'</a>'} {{end}} }
+		{{if eq $ty 2}} event: 'url_col{{$i}}', templet: function(d){return '<a class="layui-table-link" href="javascript:;">'+d.col{{RawInt $i}}+'</a>'} {{end}}
+		{{if eq $ty 3}} templet: {{RawString $tt}} {{end}} }
 	{{end}}
 	{{if .Tool}},{fixed: 'right', title:'操作', toolbar: '#{{.Id}}_toolbar', width:163}{{end}}
 			    ]]
@@ -321,7 +345,12 @@ var HtmlTable = `
 		    } else if(obj.event === 'del'){
 		      layer.confirm('确认删除', function(index){
 				var loading = layer.load(0, {shade: [0.1,'#fff'], time: 100 * 1000});
-				$.get("/api/table?event_id={{.Id}}&oper=del"{{range $i,$v:=.Header}}+"&{{$i}}="+data[{{$i}}]{{end}}+"&url_router="+getRouter(),function(res){
+				//var url = "/api/table?event_id={{.Id}}&oper=del"{{range $i,$v:=.Header}}+"&{{$i}}="+data[{{$i}}]{{end}}+"&url_router="+getRouter()
+				var url = "/api/table?event_id={{.Id}}";
+				var datapost={oper:"del",url_router: getRouter()};
+				{{range $i,$v:=.Header}}datapost["{{$i}}"]=data[{{RawInt $i}}];
+				{{end}}
+				$.post(url,datapost,function(res){
 					layer.close(loading);
 					var r = JSON.parse(res);
 					ret = r.code;
@@ -351,7 +380,12 @@ var HtmlTable = `
 				});
 		    }else if(obj.event.indexOf("user_")==0){
 				  var loading = layer.load(0, {shade: [0.1,'#fff'], time: 100 * 1000});
-				  $.get("/api/table?event_id={{.Id}}&oper="+obj.event{{range $i,$v:=.Header}}+"&{{$i}}="+data[{{$i}}]{{end}}+"&url_router="+getRouter(),function(res){
+				  //var url = "/api/table?event_id={{.Id}}&oper="+obj.event{{range $i,$v:=.Header}}+"&{{$i}}="+data[{{$i}}]{{end}}+"&url_router="+getRouter()
+				  var url = "/api/table?event_id={{.Id}}";
+				  var datapost={oper: obj.event,url_router: getRouter()};
+				  {{range $i,$v:=.Header}}datapost["{{$i}}"]=data[{{RawInt $i}}];
+				  {{end}}
+				  $.post(url,datapost,function(res){
 						layer.close(loading);
 						var obj = JSON.parse(res);
 						if(obj.RedirectUrl==getRouter()){
@@ -404,6 +438,20 @@ var HtmlTable = `
 	});
 	</script>
 
+	<style type="text/css">
+	.layui-table-view .layui-table td{
+		margin:0;
+		padding:0;
+	}
+	.layui-table-view .layui-table th{
+		margin:0;
+		padding:0;
+	}
+	.layui-table-cell{
+		margin:0;
+		padding:0;
+	}
+	</style>
 `
 
 /*
@@ -423,8 +471,14 @@ func (table *HTable) Clone() HtmlElem {
 	copy(h, table.Header)
 	c := make([]int, len(table.Header), len(table.Header))
 	copy(c, table.ColType)
+	cs := make([]int, len(table.Header), len(table.Header))
+	copy(cs, table.ColSort)
+	ct := make([]string, len(table.Header), len(table.Header))
+	copy(ct, table.ColTemplate)
 	nt.Header = h
 	nt.ColType = c
+	nt.ColSort = cs
+	nt.ColTemplate = ct
 	nt.ElemBase.clone(table.ElemBase)
 	return nt
 }

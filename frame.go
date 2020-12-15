@@ -76,18 +76,16 @@ func (f *Frame) Clone() HtmlElem {
 }
 
 func (f *Frame) buildParams() string {
-	//$("#date").val()
-	param := "\"url_router=" + f.Router + "\""
+	params := `var data={url_router:"` + f.Router + "\"}\n"
 	for _, s := range f.Events {
 		if s.ID() == "" || s.Type() == "table" || s.Type() == "text" ||
 			s.Type() == "button" || s.Type() == "echart" {
 			continue
 		}
-		param += "+\"&"
-		param += s.ID() + "=\"+" + "$(\"#" + s.ID() + `").val().replace(/\\/g, "\\\\").replace(/\r/g, "\\r").replace(/\n/g, "\\n").replace(/&/g, "\\0")`
+		params += "data[\"" + s.ID() + "\"]=$(\"#" + s.ID() + `").val()` + ";\n"
 	}
-	param += ";\n}\n"
-	return param + f.buildFunc()
+	params += "return data;\n}\n"
+	return params + f.buildFunc()
 }
 
 func (f *Frame) buildFunc() string {
@@ -103,7 +101,7 @@ func (f *Frame) RenderFrame() string {
 	buff.WriteString(HtmlHeader)
 
 	buff.WriteString(HtmlScript)
-	buff.WriteString("return " + f.buildParams())
+	buff.WriteString(f.buildParams())
 	buff.WriteString(HtmlScriptFrame)
 
 	for _, s := range f.Elems {
