@@ -68,7 +68,7 @@ func (p *HTimePicker) SetValue(v string) {
 	f = strings.Replace(f, "HH", "15", -1)
 	f = strings.Replace(f, "mm", "04", -1)
 	f = strings.Replace(f, "ss", "05", -1)
-	t, e := time.Parse(f, v)
+	t, e := time.ParseInLocation(f, v, time.Local)
 	if e != nil {
 		return
 	}
