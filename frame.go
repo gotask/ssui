@@ -130,7 +130,7 @@ func (f *Frame) Render() string {
 	buff.WriteString(HtmlHeader)
 
 	buff.WriteString(HtmlScript)
-	buff.WriteString("return " + f.buildParams())
+	buff.WriteString(f.buildParams())
 	buff.WriteString(HtmlScriptPage)
 
 	for _, s := range f.Elems {
