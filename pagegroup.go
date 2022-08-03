@@ -8,7 +8,7 @@ type PageGroup struct {
 	Groups []*PageGroup
 }
 
-//icon https://www.layui.com/doc/element/icon.html#table
+//icon http://layui-doc.pearadmin.com/doc/element/icon.html#table
 func NewPageGroup(title, icon string) *PageGroup {
 	return &PageGroup{title, icon, make([]*Frame, 0, 0), make([]*PageGroup, 0, 0)}
 }
