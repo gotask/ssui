@@ -18,7 +18,7 @@ type Frame struct {
 	OnLoad OnFrameLoad
 }
 
-//icon http://layui-doc.pearadmin.com/doc/element/icon.html#table
+// icon https://layui.dev/2.7/docs/element/icon.html
 func NewFrame(router, title, icon string, onload OnFrameLoad) *Frame {
 	return &Frame{router, title, icon, make([]HtmlElem, 0), make(map[string]HtmlElem, 0), onload}
 }

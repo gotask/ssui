@@ -25,6 +25,7 @@ var HtmlCheckBox = `<div class="layui-form-item {{if .Hide}}layui-hide{{end}}">
 </script>
 </div>`
 
+// NewCheckBox 单选框，无交互
 func NewCheckBox(id, text string, checked bool) *HCheckBox {
 	c := &HCheckBox{newElem(id, "checkbox", HtmlCheckBox), text, checked}
 	c.self = c

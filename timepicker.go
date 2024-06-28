@@ -44,7 +44,9 @@ var HtmlTimePicker = `<div class="layui-form-item">
 </script>
 </div>`
 
-//y代表年M代表月,以此类推,例如: yyyy-MM-dd HH:mm:ss yyyy年M月 yyyy年的M月某天晚上，大概H点 dd/MM/yyyy ... 1970年以来的ms数
+// NewTimePicker format y代表年M代表月,以此类推,例如: yyyy-MM-dd HH:mm:ss yyyy年M月 yyyy年的M月某天晚上，大概H点 dd/MM/yyyy ... 1970年以来的ms数
+// displaytype "year"年选择器 "month"年月选择器 date日期选择器,默认值,一般可不填  time时间选择器,提供时、分、秒选择 datetime日期时间选择器,可选择：年、月、日、时、分、秒
+// val 默认显示时间,ms,可填time.Now().UnixMilli()
 func NewTimePicker(id, format, displaytype string, val int64) *HTimePicker {
 	if displaytype == "" {
 		displaytype = "datetime"

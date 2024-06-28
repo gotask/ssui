@@ -151,6 +151,7 @@ func MergelyPage(leftFileName, r string) string {
 var HtmlMergely = `<iframe src="/mergely?fl={{.LeftFile}}&fr={{.RightFile}}&event_id={{.Id}}&url_router={{.Rout}}" id="{{.Id}}" value="{{.LeftFile}}|{{.RightFile}}" width="100%" height="700" frameborder="0" scrolling="auto">
 </iframe>`
 
+// NewMergely lf rf 要比较的左边和右边的文件名称 onf 读取需要比较的文件内容的函数 OnGetFile user 访问文件的用户 file 访问的文件名称 返回文件内容str
 func NewMergely(id, lf, rf string, onf OnGetFile) *HMergely {
 	m := &HMergely{newElem(id, "mergely", HtmlMergely), lf, rf, onf}
 	m.self = m

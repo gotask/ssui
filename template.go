@@ -10,7 +10,8 @@ var HtmlPage1 = `<!DOCTYPE html>
   <link rel="icon" href="/uilib/images/favicon.ico">
   <link rel="stylesheet" href="/uilib/layui/css/layui.css" media="all">
   <script src="/uilib/layui/layui.js" charset="utf-8"></script>
-  <script src="uilib/js/lay-config.js" charset="utf-8"></script>
+  <script src="/uilib/js/lay-config.js" charset="utf-8"></script>
+  <script src="/uilib/layui/lay/modules/jquery.js" charset="utf-8"></script>
 </head>
 <body>
 <div class="layui-layout">

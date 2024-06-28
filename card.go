@@ -12,6 +12,7 @@ var HtmlCard = `<div class="layui-card {{if .Hide}}layui-hide{{end}}">
   <div class="layui-card-body">{{Render .Body}}</div>
 </div>`
 
+// NewCard 带标题的容器
 func NewCard(header, body HtmlElem) *HCard {
 	c := &HCard{newElem("", "card", HtmlCard), header, body}
 	c.self = c

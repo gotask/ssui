@@ -94,6 +94,7 @@ var HtmlEchart = `<div id="{{.Id}}" {{if .Hide}}class="layui-hide"{{end}} style=
 </div>
 `
 
+// NewEchart 图标 SetX设置横坐标  AddData 设置纵坐标，可以有多组数据（不同的数据标题和曲线）
 func NewEchart(id, title string) *HEchart {
 	e := &HEchart{newElem(id, "echart", HtmlEchart), title, false, nil, nil}
 	e.self = e

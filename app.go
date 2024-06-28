@@ -3,6 +3,7 @@ package ssui
 
 import (
 	"fmt"
+	"github.com/gotask/gost/stnet"
 	"net/http"
 	"strings"
 	"time"
@@ -24,7 +25,7 @@ type HApp struct {
 	address     string               //监听地址
 	title       string               //标题
 	key         string               //秘钥，用于token加密，密码加密，长度16 24 32
-	handler     *http.ServeMux       //url handler
+	handler     *stnet.HttpHandler   //url handler(http.ServeMux)
 	global      *HAppData            //全局数据
 	data        map[string]*HAppData //用户数据
 	group       []*PageGroup         //menu
@@ -38,7 +39,7 @@ type HApp struct {
 
 func NewApp(addr string) *HApp {
 	return &HApp{address: addr,
-		handler: &http.ServeMux{},
+		handler: &stnet.HttpHandler{}, //&http.ServeMux{},
 		global:  &HAppData{time.Now(), make(map[string]*Frame, 0)},
 		data:    make(map[string]*HAppData, 0),
 	}
@@ -53,7 +54,7 @@ func NewAdminApp(addr, title, key string) *HApp {
 	return &HApp{address: addr,
 		title:   title,
 		key:     key,
-		handler: &http.ServeMux{},
+		handler: &stnet.HttpHandler{}, //&http.ServeMux{},
 		global:  &HAppData{time.Now(), make(map[string]*Frame, 0)},
 		data:    make(map[string]*HAppData, 0),
 		admin:   true,
@@ -62,7 +63,7 @@ func NewAdminApp(addr, title, key string) *HApp {
 
 func NewDebugApp(addr, libpath string) *HApp {
 	return &HApp{address: addr,
-		handler: &http.ServeMux{},
+		handler: &stnet.HttpHandler{}, //&http.ServeMux{},
 		global:  &HAppData{time.Now(), make(map[string]*Frame, 0)},
 		data:    make(map[string]*HAppData, 0),
 		debug:   true,
@@ -79,7 +80,7 @@ func NewAdminDebugApp(addr, title, key, libpath string) *HApp {
 	return &HApp{address: addr,
 		title:   title,
 		key:     key,
-		handler: &http.ServeMux{},
+		handler: &stnet.HttpHandler{}, //&http.ServeMux{},
 		global:  &HAppData{time.Now(), make(map[string]*Frame, 0)},
 		data:    make(map[string]*HAppData, 0),
 		admin:   true,
@@ -88,17 +89,17 @@ func NewAdminDebugApp(addr, title, key, libpath string) *HApp {
 	}
 }
 
-//是否开放注册
+// 是否开放注册
 func (a *HApp) OpenRegiste(r bool) {
 	a.openRegiste = r
 }
 
-//权限管理
+// 权限管理
 func (a *HApp) SetAuthCheck(f UserAuthCheck) {
 	a.authCheck = f
 }
 
-//token过期时间
+// token过期时间
 func (a *HApp) SetTokenExpireTime(d time.Duration) {
 	Token_Expire_Time = d
 }
@@ -119,13 +120,13 @@ func (a *HApp) userValidCheck(user, router string) bool {
 	return true
 }
 
-//添加组
+// 添加组
 func (a *HApp) AddPageGroup(p *PageGroup) *HApp {
 	a.group = append(a.group, p)
 	return a
 }
 
-//添加页面
+// 添加页面
 func (a *HApp) AddFrame(f *Frame) *HApp {
 	if a.home == nil {
 		a.home = f
@@ -134,12 +135,12 @@ func (a *HApp) AddFrame(f *Frame) *HApp {
 	return a
 }
 
-//重置用户缓存数据
+// 重置用户缓存数据
 func (a *HApp) Reset(user string) {
 	delete(a.data, user)
 }
 
-//获取http请求参数，从token中提取原始的username和token
+// 获取http请求参数，从token中提取原始的username和token
 func (a *HApp) ParseHttpParams(r *http.Request) map[string]string {
 	r.ParseForm()
 	params := make(map[string]string, 0)
@@ -193,6 +194,7 @@ func (a *HApp) GetFrame(user, router string) *Frame {
 	return f
 }
 
+// GetElem 如需修改组件内容可通过此接口获取真实组件地址
 func (a *HApp) GetElem(user, router, id string) HtmlElem {
 	f := a.GetFrame(user, router)
 	if f != nil {
@@ -306,5 +308,8 @@ func (a *HApp) Run() error {
 		HandleChpwd(a)
 	}
 
-	return http.ListenAndServe(a.address, h)
+	s := stnet.NewServer(10, 32)
+	s.AddHttpService("http", a.address, 0, &HttpServer{}, h, 0)
+	return s.Start()
+	//return http.ListenAndServe(a.address, h)
 }

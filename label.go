@@ -6,6 +6,7 @@ type HLabel struct {
 	Text string
 }
 
+// layui-form-item
 var HtmlLabel = `<div class="layui-form-item {{if .Hide}}layui-hide{{end}}">
 <label class="layui-form-label" style="text-align:{{.Align}};">{{RawString .Text}}</label>
 </div>`

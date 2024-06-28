@@ -7,7 +7,7 @@ type HProgress struct {
 	Percent float32
 }
 
-var HtmlProgress = `<div class="layui-progress {{if .Hide}}layui-hide{{end}}" lay-filter="{{.Id}}">
+var HtmlProgress = `<div class=" layui-form-item layui-progress {{if .Hide}}layui-hide{{end}}" lay-filter="{{.Id}}">
   <input type="text" class="layui-hide" id="{{.Id}}" value="{{.Percent}}">
   <div class="layui-progress-bar layui-bg-red" lay-percent="{{.Percent}}%"></div>
 <script>

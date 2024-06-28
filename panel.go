@@ -20,7 +20,7 @@ type Panel struct {
 	Elems      []PanelElem
 }
 
-//width value:1-12(percent) margin 1-30(px)
+// NewPanel 栅格布局 width value:1-12(percent) margin 1-30(px)
 func NewPanel(phoneWidth, deskWidth, margin int) *Panel {
 	if phoneWidth < 1 || phoneWidth > 12 {
 		phoneWidth = 12
@@ -34,7 +34,7 @@ func NewPanel(phoneWidth, deskWidth, margin int) *Panel {
 	return &Panel{&ElemBase{}, phoneWidth, deskWidth, margin, make([]PanelElem, 0)}
 }
 
-//width value:1-12
+// width value:1-12
 func (l *Panel) AddElem(e HtmlElem, phoneWidth, deskWidth int) *Panel {
 	if phoneWidth < 1 || phoneWidth > 12 {
 		phoneWidth = 12

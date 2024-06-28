@@ -112,8 +112,8 @@ func (table *HTable) SetColumnSort(index int, s bool) {
 	table.ColSort[index] = i
 }
 
-//SetColumnTemplate(1, `function(d){if(d.col1>0) return '<span style="display: block;background-color: #FF0000; color: #fff;>'+ d.col1 +'</span>'; else return d.col1;}`)
-//第二列如果值大于0则设置颜色
+// SetColumnTemplate(1, `function(d){if(d.col1>0) return '<span style="display: block;background-color: #FF0000; color: #fff;>'+ d.col1 +'</span>'; else return d.col1;}`)
+// 第二列如果值大于0则设置颜色
 func (table *HTable) SetColumnTemplate(index int, function string) {
 	table.ColTemplate[index] = function
 }
@@ -273,8 +273,8 @@ var HtmlTable = `
 				{{if .Tool}},toolbar:'#{{.Id}}_toolbarHeader'{{end}}
 				{{if .Tool}},defaultToolbar: [{{if not .UserDefine}}{title: '新加',layEvent: 'LAYTABLE_ADD',icon: 'layui-icon-addition'},{{end}}'filter', 'exports', 'print']{{end}}
 				{{if .Page}},page:true{{end}}
-				,limit: 50
-				,limits:[30,50,100,500,1000,10000]
+				,limit: 10
+				,limits:[5,10,30,50,100,1000]
 				,id:'{{.Id}}'
 			    ,cols: [[
 	{{range $i,$v:=.Header}} {{if gt $i 0}},{{end}} {field:'col{{$i}}', title: '{{$v}}',align: 'center',
