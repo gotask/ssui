@@ -227,7 +227,7 @@ func (a *HApp) addGroup(p *PageGroup) {
 	}
 }
 
-func (a *HApp) Run() error {
+func (a *HApp) LoadHandler() *stnet.HttpHandler {
 	AuthEdit(a)
 	for _, p := range a.group {
 		a.addGroup(p)
@@ -308,8 +308,12 @@ func (a *HApp) Run() error {
 		HandleChpwd(a)
 	}
 
-	s := stnet.NewServer(10, 32)
-	s.AddHttpService("http", a.address, 0, &HttpServer{}, h, 0)
-	return s.Start()
-	//return http.ListenAndServe(a.address, h)
+	return h
+}
+
+func (a *HApp) Run() error {
+	//s := stnet.NewServer(10, 32)
+	//s.AddHttpService("http", a.address, 0, &HttpServer{}, a.LoadHandler(), 0)
+	//return s.Start()
+	return http.ListenAndServe(a.address, a.LoadHandler())
 }
